@@ -92,6 +92,7 @@ macx {
         DEFINES -= UNIX
         LIBS += -framework CoreServices
 	DEFINES += MACX
+        QMAKE_MAC_SDK = macosx10.12
 }
 
 !contains(DEFINES,HAVE_NIDAQmx) {
