@@ -3,6 +3,5 @@
         <file>FrameGrabber/J_2000+_Electrode_8tap_8bit.ccf</file>
         <file>FrameGrabber/FG_SpikeGL/x64/Release/FG_SpikeGL.exe</file>
         <file>FrameGrabber/SapClassBasic75.dll</file>
-        <file>FrameGrabber/B_a2040_FreeRun_8Tap_Default.ccf</file>
     </qresource>
 </RCC>

@@ -2214,9 +2214,8 @@ namespace DAQ
 	/*-------------------- Framegrabber Task --------------------------------*/
 	
     /* static */ const double FGTask::SamplingRate = /*100;*/ 26739.0; // 26.739kHz sampling rate!
-    /* static */ const double FGTask::SamplingRateCalinsTest = (150 * 1024)/4; // 38.4khz rate!
 
-	/* static */ const int FGTask::NumChans = 2304 /* 72 * 32 */, FGTask::NumChansCalinsTest = 2048;
+    /* static */ const int FGTask::NumChans = 2304 /* 72 * 32 */;
 
     unsigned FGTask::numChans() const { return params.nVAIChans; }
     unsigned FGTask::samplingRate() const { return params.srate; }
@@ -2274,7 +2273,6 @@ namespace DAQ
 		QStringList files;
         files.push_back(QString(":/FG/FrameGrabber/FG_SpikeGL/x64/Release/") + exeName);
 		files.push_back(":/FG/FrameGrabber/J_2000+_Electrode_8tap_8bit.ccf");
-        files.push_back(":/FG/FrameGrabber/B_a2040_FreeRun_8Tap_Default.ccf");
         files.push_back(":/FG/FrameGrabber/SapClassBasic75.dll");
 		return files;
 	}
@@ -2672,11 +2670,7 @@ channel #32 & #64  64‐bit           8‐bit 8‐bit 8‐bit 8‐bit 8‐bit 8�
 
         // grab frames.. does stuff with Sapera API in the slave process
         XtCmdGrabFrames x;
-
-        if (params.fg.isCalinsConfig)
-            x.init(SAMPLES_SHM_NAME, writer.totalSize(), writer.pageSize(), writer.metaDataSizeBytes(), "B_a2040_FreeRun_8Tap_Default.ccf", 2048, 2048/4, NumChansCalinsTest, 0/*getDefaultMapping(1)*/);
-        else
-            x.init(SAMPLES_SHM_NAME, writer.totalSize(), writer.pageSize(), writer.metaDataSizeBytes(), "J_2000+_Electrode_8tap_8bit.ccf", 144, 32, NumChans, 0/*getDefaultMapping(0)*/);
+        x.init(SAMPLES_SHM_NAME, writer.totalSize(), writer.pageSize(), writer.metaDataSizeBytes(), "J_2000+_Electrode_8tap_8bit.ccf", 144, 32, NumChans, 0/*getDefaultMapping(0)*/);
         pushCmd(x);
     }
 

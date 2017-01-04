@@ -107,11 +107,8 @@ int FG_ConfigDialog::exec()
 
 				// todo.. form-specific stuff here which affects p.fg struct...
 				// ...
-                if ( (p.fg.isCalinsConfig = dialog->calinRadio->isChecked()) ) {
-                     p.fg.chanMapTextCalins = chanMapTxt;
-                } else {
-                     p.fg.chanMapText = chanMapTxt;
-                }
+                p.fg.chanMapText = chanMapTxt;
+
                 p.fg.baud = dialog->baud->currentIndex();
                 p.fg.com = dialog->com->currentIndex();
                 p.fg.bits = dialog->bits->currentIndex();
@@ -124,7 +121,7 @@ int FG_ConfigDialog::exec()
 				p.suppressGraphs = false; //dialog->disableGraphsChk->isChecked();
 				p.resumeGraphSettings = false; //dialog->resumeGraphSettingsChk->isChecked();
 				
-                p.nVAIChans =  p.fg.isCalinsConfig ? DAQ::FGTask::NumChansCalinsTest : DAQ::FGTask::NumChans;
+                p.nVAIChans =  DAQ::FGTask::NumChans;
 				p.nVAIChans1 = p.nVAIChans;
 				p.nVAIChans2 = 0;
 				p.aiChannels2.clear();
@@ -162,7 +159,7 @@ int FG_ConfigDialog::exec()
 
                 /*p.chanMap SET HERE: */
                 p.fg.spatialCols = spatialCols; p.fg.spatialRows = spatialRows;
-                if (!DAQ::FGTask::setupCMFromArray(&chanMapFromUser[0], p.fg.isCalinsConfig?1:0, &p.chanMap)) {
+                if (!DAQ::FGTask::setupCMFromArray(&chanMapFromUser[0], 0, &p.chanMap)) {
                     vr = ABORT;
                     continue;
                 }
@@ -191,7 +188,7 @@ int FG_ConfigDialog::exec()
 				p.aoPassthru = 0;
 				p.dualDevMode = false;
                 p.stimGlTrigResave = true; // HACK XXX don't open file for now by default since it's huge
-                p.srate = p.fg.isCalinsConfig ? DAQ::FGTask::SamplingRateCalinsTest : DAQ::FGTask::SamplingRate;
+                p.srate = DAQ::FGTask::SamplingRate;
 				p.aiTerm = DAQ::Default;
 				p.aiString = QString("0:%1").arg(p.nVAIChans-1);
 				p.customRanges.resize(p.nVAIChans);
@@ -226,8 +223,8 @@ FG_ConfigDialog::validateForm(QString & errTitle, QString & errMsg, bool isGUI)
 {
 	(void)errTitle; (void)errMsg; (void)isGUI;
     DAQ::Params & p (acceptedParams);
-    QString mapstr = dialog->calinRadio->isChecked() ? p.fg.chanMapTextCalins : p.fg.chanMapText;
-    int req_chans = dialog->calinRadio->isChecked() ? 2048 : 2304;
+    QString mapstr = p.fg.chanMapText;
+    int req_chans = DAQ::FGTask::NumChans;
     QString err = validateChanMappingText(mapstr, req_chans, spatialRows, spatialCols, &chanMapFromUser);
     if (err.length()) {
         errTitle = "Channel Mapping Invalid";
@@ -289,10 +286,6 @@ void FG_ConfigDialog::guiFromSettings()
         }
     }
 
-    dialog->calinRadio->setChecked(p.fg.isCalinsConfig);
-    dialog->janeliaRadio->setChecked(!p.fg.isCalinsConfig);
-
-    if (!p.fg.chanMapTextCalins.trimmed().length()) p.fg.chanMapTextCalins = generateDefaultMappingString(1, 64, 32);
     if (!p.fg.chanMapText.trimmed().length()) p.fg.chanMapText = generateDefaultMappingString(0, 64, 36);
 
 }
@@ -350,15 +343,9 @@ void FG_ConfigDialog::chanMapButClicked()
 
     d.setupUi(&dW);
     QString *paramStr = 0;
-    if (dialog->calinRadio->isChecked()) {
-        d.acqModeLbl->setText("Calin's Test");
-        d.nChansLbl->setText(QString::number(req_chans=2048));
-        paramStr=&p.fg.chanMapTextCalins;
-    } else {
-        d.acqModeLbl->setText("Janelia FPGA");
-        d.nChansLbl->setText(QString::number(req_chans=2304));
-        paramStr=&p.fg.chanMapText;
-    }
+    d.acqModeLbl->setText("Janelia FPGA");
+    d.nChansLbl->setText(QString::number(req_chans=DAQ::FGTask::NumChans));
+    paramStr=&p.fg.chanMapText;
     d.chanMapTE->setPlainText(*paramStr);
 
     bool keepTrying = true;

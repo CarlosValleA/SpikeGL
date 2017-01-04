@@ -1186,8 +1186,6 @@ void ConfigureDialogController::paramsFromSettingsObject(DAQ::Params & p, const 
     p.fg.sidx = settings.value("fg_sidx", 1).toInt();
     p.fg.ridx = settings.value("fg_ridx", 0).toInt();
     p.fg.disableChanMap = settings.value("fg_no_chan_map", false).toBool();
-    p.fg.isCalinsConfig = settings.value("fg_calins", false).toBool();
-    p.fg.chanMapTextCalins = settings.value("fg_calins_chanmap_txt", "").toString();
     p.fg.chanMapText = settings.value("fg_chanmap_txt", "").toString();
 }
 
@@ -1304,9 +1302,7 @@ void ConfigureDialogController::saveSettings(int sc) const
         settings.setValue("fg_parity", p.fg.parity);
         settings.setValue("fg_sidx", p.fg.sidx);
         settings.setValue("fg_ridx", p.fg.ridx);
-        settings.setValue("fg_calins", p.fg.isCalinsConfig);
         settings.setValue("fg_no_chan_map", p.fg.disableChanMap);
-        settings.setValue("fg_calins_chanmap_txt", p.fg.chanMapTextCalins);
         settings.setValue("fg_chanmap_txt", p.fg.chanMapText);
     }
 

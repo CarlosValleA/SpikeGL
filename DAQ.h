@@ -180,10 +180,9 @@ namespace DAQ
             bool disableChanMap;
             int sidx, ridx; ///< server and resource index
             int com,baud,bits,parity,stop;
-            bool isCalinsConfig;
-            QString chanMapTextCalins, chanMapText;
+            QString chanMapText;
             int spatialRows, spatialCols;
-            void reset() { enabled = false; com=1,baud=1,bits=0,parity=0,stop=0; sidx=1; ridx=0; isCalinsConfig = false; disableChanMap = false; spatialRows=spatialCols=0; }
+            void reset() { enabled = false; com=1,baud=1,bits=0,parity=0,stop=0; sidx=1; ridx=0; disableChanMap = false; spatialRows=spatialCols=0; }
 		} fg;
 		
         mutable QMutex mutex;
@@ -541,8 +540,8 @@ namespace DAQ
 		
         static QString getChannelName(unsigned num, const ChanMap *chanMap=0);
 		
-        static const double SamplingRate, SamplingRateCalinsTest;
-        static const int NumChans /*= 2304 == 72 * 32 */, NumChansCalinsTest /*= 2048*/;
+        static const double SamplingRate;
+        static const int NumChans /*= 2304 == 72 * 32 */;
 
         void pushCmd(const XtCmd * c);
         void pushCmd(const XtCmd & c) { pushCmd(&c); }

@@ -128,8 +128,11 @@ static void acqCallback(SapXferCallbackInfo *info)
         xfer->Abort();
         return;
     }
-
-    //double t0write = getTime(); /// XXX
+#define DUMP_FRAMES 0
+#if     DUMP_FRAMES
+    double t0write = getTime(); /// XXX
+	static double tLastPrt = 0.; /// XXX
+#endif
 
     if (pitch != w) {
         // WARNING:
@@ -155,6 +158,29 @@ static void acqCallback(SapXferCallbackInfo *info)
         }
 
         const char *pc = reinterpret_cast<const char *>(pData);
+#if DUMP_FRAMES
+		// HACK TESTING HACK
+		static FILE *f = 0; static bool tryfdump = true;
+		if ( tryfdump ) {
+			if (!f) f = fopen("c:\\frame.bin", "ab");
+			if (!f) {
+				spikeGL->pushConsoleError("Could not open d:\\frame.bin");
+				tryfdump = false;
+			}
+			else {
+				size_t s = fwrite(pc, pitch*height, bpp, f);
+				if (!s) {
+					spikeGL->pushConsoleError("Error writing frame to d:\\frmae.bin");
+				}
+				else if (t0write - tLastPrt > 1.0) {
+					spikeGL->pushConsoleDebug("Appended frame to d:\\frame.bin");
+					fflush(f);
+					tLastPrt = t0write;
+				}
+			}
+		}
+		// /HACK
+#endif
         writer->writePartialBegin();
         for (int line = 0; line < h; ++line) {
 //            if (1) { // no swab
