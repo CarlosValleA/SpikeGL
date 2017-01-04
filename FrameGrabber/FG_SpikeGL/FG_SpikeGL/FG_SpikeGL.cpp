@@ -162,7 +162,7 @@ static void acqCallback(SapXferCallbackInfo *info)
 		// HACK TESTING HACK
 		static FILE *f = 0; static bool tryfdump = true;
 		if ( tryfdump ) {
-			if (!f) f = fopen("c:\\frame.bin", "ab");
+                        if (!f) f = fopen("c:\\frame.bin", "wb");
 			if (!f) {
 				spikeGL->pushConsoleError("Could not open d:\\frame.bin");
 				tryfdump = false;
