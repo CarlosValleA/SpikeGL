@@ -2409,9 +2409,14 @@ namespace DAQ
     }
 
     void FGTask::do_updateTimestampLabel() {
+        unsigned int ts = 0;
+        char *pts = (char *)&ts;
         lastScanTSMut.lock();
-        QString txt = QString::number(lastScanTS);
+        // swab bytes -- added 1/4/2017 as Jim Chen updated FPGA code to send us a timestamp as first 32 bits of line
+        volatile char *p = (volatile char *)&lastScanTS;
+        pts[0] = p[3]; pts[1] = p[2]; pts[2] = p[1]; pts[3] = p[0];
         lastScanTSMut.unlock();
+        QString txt = QString::number(ts);
         dialog->timestampLbl->setText(txt);
     }
 
