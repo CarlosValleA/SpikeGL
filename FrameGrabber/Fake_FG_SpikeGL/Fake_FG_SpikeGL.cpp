@@ -6,7 +6,8 @@
 #include <QTimer>
 #include <QDateTime>
 #include <QSharedMemory>
-#ifdef Q_OS_WINDOWS
+#ifdef Q_OS_WIN
+#define _USE_MATH_DEFINES
 #include <varargs.h>
 #include <windows.h>
 #else
@@ -69,7 +70,7 @@ static int PSWDbgFunc(const char *fmt, ...)
     va_list l;
     int ret = 0;
     va_start(l, fmt);
-    ret = vsnprintf_s(buf, sizeof(buf), fmt, l);
+    ret = _vsnprintf_s(buf, sizeof(buf), fmt, l);
     spikeGL->pushConsoleDebug(buf);
     va_end(l);
     return ret;
@@ -80,7 +81,7 @@ static int PSWErrFunc(const char *fmt, ...)
     va_list l;
     int ret = 0;
     va_start(l, fmt);
-    ret = vsnprintf_s(buf, sizeof(buf), fmt, l);
+    ret = _vsnprintf_s(buf, sizeof(buf), fmt, l);
     spikeGL->pushConsoleError(buf);
     va_end(l);
     return ret;
@@ -149,7 +150,9 @@ static void writeFakeFrame()
         return;
     }
 
-    char frame[pitch*height];
+
+    //char frame[pitch*height];
+    char frame[1024*1024];
 
     genFakeFrame(frame,pitch,height,tsCounter,frameNum);
 
@@ -517,7 +520,7 @@ int main(int argc, char **argv)
     return app.exec();
 }
 
-#ifdef Q_OS_WINDOWS
+#ifdef Q_OS_WIN
 static double getTime()
 {
     static __int64 freq = 0;

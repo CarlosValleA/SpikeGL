@@ -1,8 +1,3 @@
-#ifndef Q_OS_WINDOWS
-#define _snprintf_c snprintf
-#define vsnprintf_s vsnprintf
-typedef unsigned char BYTE;
-#endif
 #include <QCoreApplication>
 #include <QThread>
 #include <QString>
@@ -14,6 +9,12 @@ typedef unsigned char BYTE;
 #include <vector>
 #include <list>
 #include <string>
+
+#ifndef Q_OS_WIN
+#define _snprintf_c snprintf
+#define _vsnprintf_s vsnprintf
+typedef unsigned char BYTE;
+#endif
 
 #include "SpikeGLHandlerThread.h"
 

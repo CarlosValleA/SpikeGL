@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <sys/stat.h>
 #include <stdio.h>
-#ifdef Q_OS_WINDOWS
+#ifdef Q_OS_WIN
 #include <io.h>
 #endif
 #include <fcntl.h>
@@ -80,7 +80,7 @@ bool SpikeGLOutThread::pushConsoleMsg(const std::string & str, int mtype)
 
 void SpikeGLOutThread::threadFunc()
 {
-#if Q_OS_WINDOWS
+#ifdef Q_OS_WIN
     _setmode(_fileno(stdout), O_BINARY);
 #else
     freopen(0, "wb", stdout);
@@ -107,7 +107,7 @@ void SpikeGLOutThread::threadFunc()
 
 void SpikeGLInputThread::threadFunc()
 {
-#ifdef Q_OS_WINDOWS
+#ifdef Q_OS_WIN
     _setmode(_fileno(stdin), O_BINARY);
 #else
     freopen(0,"rb",stdin);
