@@ -112,11 +112,11 @@ PRE_TARGETDEPS += copyfake_fg
 !win32 {
    copyfake_fg.commands += cp -v FrameGrabber/Fake_FG_SpikeGL/Fake_FG $$PWD/FrameGrabber/Fake_FG.exe
 }
-win32:debug {
+win32 {
+    CONFIG(debug, debug|release) {
         copyfake_fg.commands = copy $$shell_path($$shadowed(FrameGrabber/Fake_FG_SpikeGL/debug/Fake_FG.exe)) $$shell_path($$PWD/FrameGrabber)
-}
-win32:release {
+    } else {
         copyfake_fg.commands = copy $$shell_path($$shadowed(FrameGrabber/Fake_FG_SpikeGL/release/Fake_FG.exe)) $$shell_path($$PWD/FrameGrabber)
+    }
 }
-
 
