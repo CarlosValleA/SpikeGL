@@ -96,8 +96,8 @@ void genFakeFrame(char *buf, int pitch, int height, unsigned long long  & ctr, u
         for (int c = 8; c < pitch; c+=2) {
            short *s = (short *)&buf[r*pitch + c];
            float cfrac = (float(c)/152.f);
-           if (c%2) *s = ::sinf(v * (4.0f * cfrac) + cfrac*0.1) * 32768;
-           else     *s = ::cosf(v * (4.0f * cfrac) + cfrac*0.1) * 32767;
+           if (c%2) *s = ::sinf(v * (80.0f * cfrac) + cfrac*10.f) * 20000;
+           else     *s = ::cosf(v * (80.0f * cfrac) + cfrac*10.f) * 20000;
         }
         ctr += 88ULL;
     }
