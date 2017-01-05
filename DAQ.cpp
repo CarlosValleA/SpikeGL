@@ -2224,7 +2224,7 @@ namespace DAQ
 
     FGTask::FGTask(Params & ap, QObject *parent, const PagedScanReader &psr, bool isDummy)
         : SubprocessTask(ap, parent, "Framegrabber",
-                         ap.fg.sidx == -1234 && ap.fg.ridx == -1234 ? "Fake_FG.exe" : "FG_SpikeGL.exe",
+                         !isDummy && ap.fg.sidx == -1234 && ap.fg.ridx == -1234 ? "Fake_FG.exe" : "FG_SpikeGL.exe",
                          psr), lastScanTS(0), lastScanTSMut(QMutex::Recursive)
 	{
         killAllInstancesOfProcessWithImageName(exeName);                
