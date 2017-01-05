@@ -807,11 +807,11 @@ bool MainApp::startAcq(QString & errTitle, QString & errMsg)
 
     if (doFGAcqInstead) {
         if (!shm.isAttached()) {
-#if QT_VERSION >= 0x040800 && defined(Q_OS_WINDOWS)
-            shm.setNativeKey(SAMPLES_SHM_NAME);
-#else
+//#if QT_VERSION >= 0x040800  && defined(Q_OS_WINDOWS)
+//            shm.setNativeKey(SAMPLES_SHM_NAME);
+//#else
             shm.setKey(SAMPLES_SHM_NAME);
-#endif
+//#endif
             if (shm.attach()) {
                 shm.detach(); // for some reason doing this under windows often 'fixes' the problem
                 if (shm.attach()) {

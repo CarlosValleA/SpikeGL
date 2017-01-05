@@ -188,6 +188,8 @@ public:
     u64 scanCount() const { return scanCt; }
     u64 scanSkipCount() const { return scanSkipCt; }
 
+    QString qsmNativeKey() const { return shm.nativeKey(); }
+
 public slots:    
     /// Set/unset the application-wide 'debug' mode setting.  If the application is in debug mode, Debug() messages are printed to the console window, otherwise they are not
     void toggleDebugMode(); 

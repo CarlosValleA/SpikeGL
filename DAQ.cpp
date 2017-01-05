@@ -2679,7 +2679,7 @@ channel #32 & #64  64‐bit           8‐bit 8‐bit 8‐bit 8‐bit 8‐bit 8�
 
         // grab frames.. does stuff with Sapera API in the slave process
         XtCmdGrabFrames x;
-        x.init(SAMPLES_SHM_NAME, writer.totalSize(), writer.pageSize(), writer.metaDataSizeBytes(), "J_2000+_Electrode_8tap_8bit.ccf", 144, 32, NumChans, 0/*getDefaultMapping(0)*/);
+        x.init(/*SAMPLES_SHM_NAME*/mainApp()->qsmNativeKey().toUtf8().constData(), writer.totalSize(), writer.pageSize(), writer.metaDataSizeBytes(), "J_2000+_Electrode_8tap_8bit.ccf", 144, 32, NumChans, 0/*getDefaultMapping(0)*/);
         pushCmd(x);
     }
 

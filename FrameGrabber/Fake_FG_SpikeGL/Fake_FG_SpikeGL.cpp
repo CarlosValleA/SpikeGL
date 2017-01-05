@@ -310,6 +310,9 @@ static bool setupAndStartAcq()
 
         if (qsm) delete qsm, qsm = 0;
         qsm = new QSharedMemory(shmName.c_str(), qApp);
+#if QT_VERSION >= 0x040800
+        qsm->setNativeKey(shmName.c_str());
+#endif
         if (!qsm->isAttached() && !qsm->attach()) {
             delete qsm, qsm = 0;
             _snprintf_c(tmp, sizeof(tmp), "Could not attach to shared memory segment \"%s\"", shmName.c_str());
