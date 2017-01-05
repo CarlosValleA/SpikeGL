@@ -2738,6 +2738,7 @@ channel #32 & #64  64‐bit           8‐bit 8‐bit 8‐bit 8‐bit 8‐bit 8�
         x->init("","",-1,-1,0,0);
         p.write(ba);
         int timeout = 10000;
+        bool hadError = false;
         if (p.state() == QProcess::Running && p.waitForReadyRead(timeout)) {
             ba.clear();
             probedHardware.clear();
@@ -2751,12 +2752,14 @@ channel #32 & #64  64‐bit           8‐bit 8‐bit 8‐bit 8‐bit 8‐bit 8�
         } else {
             Error() << "Failed to probe Sapera for active hardware: slave process not running or waitForReadyRead() timed out!";
             p.kill();
-            return;
+            hadError = true;
         }
-        task.sendExitCommand(p);
-        p.waitForFinished(250);
-        if (p.state() != QProcess::NotRunning) p.kill();
 
+        if (!hadError) {
+            task.sendExitCommand(p);
+            p.waitForFinished(250);
+            if (p.state() != QProcess::NotRunning) p.kill();
+        }
 #endif
         {
             bool hasfake = false;

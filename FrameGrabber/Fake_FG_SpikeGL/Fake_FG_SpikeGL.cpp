@@ -152,7 +152,7 @@ static void writeFakeFrame()
 
 
     //char frame[pitch*height];
-    char frame[1024*1024];
+    char frame[12*1024];
 
     genFakeFrame(frame,pitch,height,tsCounter,frameNum);
 
