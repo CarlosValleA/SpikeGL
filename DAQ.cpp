@@ -2223,7 +2223,9 @@ namespace DAQ
 
 
     FGTask::FGTask(Params & ap, QObject *parent, const PagedScanReader &psr, bool isDummy)
-        : SubprocessTask(ap, parent, "Framegrabber", "FG_SpikeGL.exe", psr), lastScanTS(0), lastScanTSMut(QMutex::Recursive)
+        : SubprocessTask(ap, parent, "Framegrabber",
+                         ap.fg.sidx == -1234 && ap.fg.ridx == -1234 ? "Fake_FG.exe" : "FG_SpikeGL.exe",
+                         psr), lastScanTS(0), lastScanTSMut(QMutex::Recursive)
 	{
         killAllInstancesOfProcessWithImageName(exeName);                
 
@@ -2271,7 +2273,10 @@ namespace DAQ
 	QStringList FGTask::filesList() const 
 	{
 		QStringList files;
+#ifdef Q_OS_WINDOWS
         files.push_back(QString(":/FG/FrameGrabber/FG_SpikeGL/x64/Release/") + exeName);
+#endif
+        files.push_back(QString(":/FG/FrameGrabber/") + exeName);
 		files.push_back(":/FG/FrameGrabber/J_2000+_Electrode_8tap_8bit.ccf");
         files.push_back(":/FG/FrameGrabber/SapClassBasic75.dll");
 		return files;
@@ -2700,8 +2705,8 @@ channel #32 & #64  64‐bit           8‐bit 8‐bit 8‐bit 8‐bit 8‐bit 8�
 
     /* static */
     void FGTask::probeHardware() {
-
         double t0 = getTime();
+#ifdef Q_OS_WINDOWS
         DAQ::Params dummy;
         PagedScanReader dummy2(0,0,0,0,0);
         FGTask task(dummy,0,dummy2,true);
@@ -2754,6 +2759,17 @@ channel #32 & #64  64‐bit           8‐bit 8‐bit 8‐bit 8‐bit 8‐bit 8�
         p.waitForFinished(250);
         if (p.state() != QProcess::NotRunning) p.kill();
 
+#endif
+        {
+            bool hasfake = false;
+            // add fake FG if needed
+            for (QList<DAQ::FGTask::Hardware>::const_iterator it = probedHardware.begin(); it != probedHardware.end(); ++it)
+                if (it->serverName.startsWith("Fake")) hasfake = true;
+            if (!hasfake) {
+                Hardware h; h.serverName = "FakeFG"; h.resourceName = "Synthetic Data for Testing"; h.serverIndex = -1234; h.resourceIndex = -1234; h.serverType = -1234; h.accessible = true;
+                probedHardware.push_back(h);
+            }
+        }
         last_hw_probe_ts = getTime();
         Debug() << "Probe done, found " << probedHardware.size() << " valid AcqDevices in " << (last_hw_probe_ts-t0) << " secs.";
     }

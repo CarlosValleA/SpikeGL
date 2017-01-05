@@ -551,14 +551,12 @@ namespace DAQ
         void updateTimesampLabel(unsigned long long ts);
 
     protected:
-#ifndef Q_OS_WINDOWS
-		bool platformSupported() const { return false; }
-#endif
         int readTimeoutMaxSecs() const { return 9999; }
 		unsigned gotInput(const QByteArray & data, unsigned lastReadNBytes, QProcess & p);
 		QStringList filesList() const;
         void sendExitCommand(QProcess & p) const;
         bool outputCmdsAreBinary() const { return true; }
+        /*virtual*/ QString interpreter() const { return ""; }
 
     signals:
 

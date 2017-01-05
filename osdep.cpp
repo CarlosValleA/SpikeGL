@@ -463,9 +463,14 @@ void setVSyncMode(bool onoff, bool prt)
 {
     GLint tmp = onoff ? 1 : 0;
     AGLContext ctx = aglGetCurrentContext();
-    if (aglEnable(ctx, AGL_SWAP_INTERVAL) == GL_FALSE)
-        Warning() << "VSync mode could not be changed becuse aglEnable AGL_SWAP_INTERVAL returned false!";
-    else {
+    if (aglEnable(ctx, AGL_SWAP_INTERVAL) == GL_FALSE) {
+        static double lastWarn = 0;
+        double now = getTime();
+        if (now-lastWarn > 0.25) {
+            Warning() << "VSync mode could not be changed becuse aglEnable AGL_SWAP_INTERVAL returned false!";
+            lastWarn = now;
+        }
+    } else {
         if ( aglSetInteger(ctx, AGL_SWAP_INTERVAL, &tmp) == GL_FALSE )
             Warning() << "VSync mode could not be changed because aglSetInteger returned false!";
         else if (prt)

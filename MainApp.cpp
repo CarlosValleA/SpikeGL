@@ -807,7 +807,7 @@ bool MainApp::startAcq(QString & errTitle, QString & errMsg)
 
     if (doFGAcqInstead) {
         if (!shm.isAttached()) {
-#if QT_VERSION >= 0x040800
+#if QT_VERSION >= 0x040800 && defined(Q_OS_WINDOWS)
             shm.setNativeKey(SAMPLES_SHM_NAME);
 #else
             shm.setKey(SAMPLES_SHM_NAME);
@@ -824,7 +824,7 @@ bool MainApp::startAcq(QString & errTitle, QString & errMsg)
             }
             if (!shm.create(shmSizeBytes)) {
                 errTitle = "Shared Memory Error";
-                errMsg = QString("Error creating the shared memory segment.\n\nError was: `") + shm.errorString() + "'\n\nSpikeGL requires enough memory to create a buffer of size " + QString::number(shmSizeMB) + " MB.";
+                errMsg = QString("Error creating the shared memory segment.\n\nError was #") + QString::number(int(shm.error())) + ": \n`" + shm.errorString() + "'\n\nSpikeGL requires enough memory to create a buffer of size " + QString::number(shmSizeMB) + " MB.";
                 return false;
             } else {
                 if ( shm.size() < shmSizeBytes ) {
