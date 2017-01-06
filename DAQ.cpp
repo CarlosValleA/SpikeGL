@@ -13,6 +13,7 @@
 #include <string.h>
 #include <QString>
 #include <QFile>
+#include <QDir>
 #include <QMessageBox>
 #include <QApplication>
 #include <QRegExp>
@@ -2277,6 +2278,12 @@ namespace DAQ
         files.push_back(QString(":/FG/FrameGrabber/Fake_FG.exe"));
 		files.push_back(":/FG/FrameGrabber/J_2000+_Electrode_8tap_8bit.ccf");
         files.push_back(":/FG/FrameGrabber/SapClassBasic75.dll");
+#ifdef Q_OS_WIN
+        HMODULE hModule = GetModuleHandleA("Qt5Core.dll");
+        char dllPath[_MAX_PATH];
+        GetModuleFileNameA(hModule, dllPath, _MAX_PATH);
+        files.push_back(QDir::fromNativeSeparators(dllPath));
+#endif
 		return files;
 	}
 		

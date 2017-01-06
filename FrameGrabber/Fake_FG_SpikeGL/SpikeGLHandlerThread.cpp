@@ -80,10 +80,15 @@ bool SpikeGLOutThread::pushConsoleMsg(const std::string & str, int mtype)
 
 void SpikeGLOutThread::threadFunc()
 {
+    FILE *outf = 0;
 #ifdef Q_OS_WIN
-    _setmode(_fileno(stdout), O_BINARY);
+    int fd = _fileno(stdout);
+    _setmode(fd, O_BINARY);
+    outf = _fdopen(fd, "wb");
+#else
+    outf = freopen(0, "wb", stdout);
 #endif
-    freopen(0, "wb", stdout);
+    if (!outf) return;
     while (!pleaseStop) {
         int ct = 0;
         if (mut.tryLock(100)) {
@@ -93,12 +98,12 @@ void SpikeGLOutThread::threadFunc()
             mut.unlock();
             for (CmdList::iterator it = my.begin(); it != my.end(); ++it) {
                 XtCmd *c = (XtCmd *)&((*it)[0]);
-                if (!c->write(stdout)) {
+                if (!c->write(outf)) {
                     // todo.. handle error here...
                 }
                 ++ct;
             }
-            fflush(stdout);
+            fflush(outf);
             if (!ct) msleep(10);
         }
     }
@@ -106,14 +111,19 @@ void SpikeGLOutThread::threadFunc()
 
 void SpikeGLInputThread::threadFunc()
 {
+    FILE *inpf = 0;
 #ifdef Q_OS_WIN
-    _setmode(_fileno(stdin), O_BINARY);
+    int fd = _fileno(stdin);
+    _setmode(fd, O_BINARY);
+    inpf = _fdopen(fd, "rb");
+#else
+    inpf = freopen(0,"rb",stdin);
 #endif
-    freopen(0,"rb",stdin);
+    if (!inpf) return;
     std::vector<unsigned char> buf;
     XtCmd *xt = 0;
     while (!pleaseStop) {
-        if ((xt = XtCmd::read(buf, stdin))) {
+        if ((xt = XtCmd::read(buf, inpf))) {
             if (!pushCmd(xt)) {
                 // todo.. handle error here...
             }
