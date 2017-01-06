@@ -31,6 +31,7 @@
 #include <QMutexLocker>
 #include <QShowEvent>
 #include <QHideEvent>
+#include <QBitArray>
 #include <string.h>
 #include "MainApp.h"
 #include "HPFilter.h"
@@ -79,7 +80,7 @@ static void initIcons()
 }
 
 GraphsWindow::GraphsWindow(DAQ::Params & p, QWidget *parent, bool isSaving, bool useTabs, int graphUpdateRateHz)
-    : QMainWindow(parent), threadsafe_is_visible(false), params(p), useTabs(useTabs), nPtsAllGs(0), downsampleRatio(1.), tNow(0.), tLast(0.), tAvg(0.), tNum(0.), filter(0), modeCaresAboutSGL(false), modeCaresAboutPD(false), suppressRecursive(false), graphsMut(QMutex::Recursive)
+    : QMainWindow(parent), threadsafe_is_visible(false), params(p), useTabs(useTabs), downsampleRatio(1.), dsLeftOver(0), tNow(0.), tLast(0.), tAvg(0.), tNum(0.), filter(0), modeCaresAboutSGL(false), modeCaresAboutPD(false), suppressRecursive(false), graphsMut(QMutex::Recursive)
 {
     sharedCtor(p, isSaving, graphUpdateRateHz);
 }
@@ -296,7 +297,6 @@ void GraphsWindow::sharedCtor(DAQ::Params & p, bool isSaving, int graphUpdateRat
     graphFrames.resize(graphs.size());
     pausedGraphs.resize(graphs.size());
     graphTimesSecs.resize(graphs.size());
-    nptsAll.resize(graphs.size());
     points.resize(graphs.size());
     graphStats.resize(graphs.size());
 	graphStates.resize(graphs.size());
@@ -440,8 +440,6 @@ void GraphsWindow::sharedCtor(DAQ::Params & p, bool isSaving, int graphUpdateRat
 
 	loadGraphSettings();
 
-    update_nPtsAllGs();
-
     QTimer *t = new QTimer(this);
     Connect(t, SIGNAL(timeout()), this, SLOT(updateGraphs()));
     t->setSingleShot(false);
@@ -570,7 +568,7 @@ void GraphsWindow::setGraphTimeSecs(int num, double t)
 
     if (num < 0 || num >= (int)graphs.size() || t < 0.0) return;
     graphTimesSecs[num] = t;
-    const i64 npts = nptsAll[num] = ( graphs[num] ? i64(ceil(t*params.srate/downsampleRatio)) : 0); // if the graph is not on-screen, make it use 0 points in the points WB to save memory for high-channel-counts
+    const i64 npts = ( graphs[num] ? i64(qCeil(t*(params.srate/qRound(downsampleRatio)))) : 0); // if the graph is not on-screen, make it use 0 points in the points WB to save memory for high-channel-counts
     points[num].reserve(npts);
     double s = t;
     int nlines = 1;
@@ -592,78 +590,80 @@ void GraphsWindow::setGraphTimeSecs(int num, double t)
     emit graphTimeSecsChanged(num,t);
 }
 
-void GraphsWindow::update_nPtsAllGs()
-{
-    QMutexLocker l(&graphsMut);
-
-    nPtsAllGs = 0;
-    for (int i = 0; i < graphs.size(); ++i) nPtsAllGs += nptsAll[i];
-}
-
 void GraphsWindow::putScans(const int16 * data, unsigned DSIZE, u64 firstSamp)
 {
     QMutexLocker l(&graphsMut);
 
         //const double t0 = getTime(); /// XXX debug
-        const int NGRAPHS (graphs.size());
+        const int SCANSIZE (graphs.size());
         const int dsr = qRound(downsampleRatio);
         const int DOWNSAMPLE_RATIO(dsr<1?1:dsr);
         const double SRATE (params.srate > 0. ? params.srate : 0.01);
+        const int DSCANS = int(DSIZE/unsigned(SCANSIZE));
         // avoid some operator[] and others..
         const int16 * DPTR = &data[0];
         const bool * const pgraphs = &pausedGraphs[0];
         Vec2fWrapBuffer * const pts = &points[0];
-        int startpt = (int(DSIZE) - int(nPtsAllGs*DOWNSAMPLE_RATIO));
-        i64 sidx = i64((firstSamp) + u64(DSIZE)) - nPtsAllGs*i64(DOWNSAMPLE_RATIO);
-        if (startpt < 0) {
-            //qDebug("Startpt < 0 = %d", startpt);
-            sidx += -startpt;
-            startpt = 0;
-        }
+        int startpt = 0 + (dsLeftOver*SCANSIZE);
+        u64 sidx = u64(firstSamp + u64(startpt));
 
-
-        double t = double(double(sidx) / NGRAPHS) / double(SRATE);
-        const double deltaT =  1.0/SRATE * downsampleRatio;
+        double t = double(sidx / double(SCANSIZE)) / double(SRATE);
+        const double deltaT =  1.0/SRATE * DOWNSAMPLE_RATIO;
         // now, push new points to back of each graph, downsampling if need be
         Vec2f v;
-        int idx = 0;
+        int idx = 0, scannum = dsLeftOver;
         const int maximizedIdx = (maximized ? parseGraphNum(maximized) : -1);
 
+        QBitArray ok2put(SCANSIZE,false);
+        int okct = 0, okctmax = SCANSIZE;
+        for (int i = 0; i < SCANSIZE; ++i) if (!graphs[i]) --okctmax; // if on another page, will always fail the ok test so make the ok test only look at graphs that have a .capacity()
+
         bool needFilter = filter;
-        if (needFilter) scanTmp.resize(NGRAPHS);
+        if (needFilter) scanTmp.resize(SCANSIZE);
         for (int i = startpt; i < (int)DSIZE; ++i) {
             if (needFilter) {
-                memcpy(&scanTmp[0], &data[i], NGRAPHS*sizeof(int16));
+                memcpy(&scanTmp[0], &data[i], SCANSIZE*sizeof(int16));
                 filter->apply(&scanTmp[0], deltaT);
                 DPTR = (&scanTmp[0])-i;//fudge DPTR.. dangerous but below code always accesses it as DPTR[i], so it's ok
                 needFilter = false;
             }
-            if ( graphs[idx] && !pgraphs[idx] && (maximizedIdx < 0 || maximizedIdx == idx)) {
-                v.x = t;
-                v.y = DPTR[i] / 32768.0; // hardcoded range of data
-                Vec2fWrapBuffer & pbuf = pts[idx];
-                GraphStats & gs = graphStats[idx];
-                if (!pbuf.unusedCapacity()) {
-                    const double val = pbuf.first().y;
-                    gs.s1 -= val; // un-tally sum of values
-                    gs.s2 -= val*val; // un-tally sum of squares of values
-                    --gs.num;
+            Vec2fWrapBuffer & pbuf = pts[idx];
+            bool newok = false;
+            if (okct >= okctmax || ok2put.testBit(idx) || (newok=(int(pbuf.capacity()) >= DSCANS-scannum) )) {
+                if (newok) ok2put.setBit(idx, true), ++okct;
+                if ( graphs[idx] && !pgraphs[idx] && (maximizedIdx < 0 || maximizedIdx == idx)) {
+                    v.x = t;
+                    v.y = DPTR[i] / 32768.0; // hardcoded range of data
+                    GraphStats & gs = graphStats[idx];
+                    if (!pbuf.unusedCapacity()) {
+                        const double val = pbuf.first().y;
+                        gs.s1 -= val; // un-tally sum of values
+                        gs.s2 -= val*val; // un-tally sum of squares of values
+                        --gs.num;
+                    }
+                    pbuf.putData(&v, 1);
+                    gs.s1 += v.y; // tally sum of values
+                    gs.s2 += v.y*v.y; // tally sum of squares of values
+                    ++gs.num;
                 }
-                pbuf.putData(&v, 1);
-                gs.s1 += v.y; // tally sum of values
-                gs.s2 += v.y*v.y; // tally sum of squares of values
-                ++gs.num;
             }
-            if (!(++idx%NGRAPHS)) {                
+            if (!(++idx % SCANSIZE)) { // new scan
                 idx = 0;
                 t += deltaT;
-                i = int((i-NGRAPHS) + DOWNSAMPLE_RATIO*NGRAPHS);
-                if ((i+1)%NGRAPHS) i -= (i+1)%NGRAPHS;
+                i = int((i-SCANSIZE) + DOWNSAMPLE_RATIO*SCANSIZE);
+                scannum += DOWNSAMPLE_RATIO;
+                if (scannum >= DSCANS)
+                    dsLeftOver = (scannum - DSCANS)%DOWNSAMPLE_RATIO;
+                if ((i+1) % SCANSIZE) {
+                    Warning() << "i+1 mod SCANSIZE is nonzero!";
+                    i -= (i+1) % SCANSIZE;
+                }
                 DPTR = &data[0];
                 needFilter = filter;
             }
         }
-        for (int i = 0; i < NGRAPHS; ++i) {
+
+        for (int i = 0; i < SCANSIZE; ++i) {
             if (pgraphs[i] || !graphs[i]) continue;
             // now, copy in temp data
             if (graphs[i] && pts[i].size() >= 2) {
@@ -673,8 +673,8 @@ void GraphsWindow::putScans(const int16 * data, unsigned DSIZE, u64 firstSamp)
 				graphStates[i].max_x = graphStates[i].min_x + graphTimesSecs[i];
                 graphs[i]->maxx() = graphStates[i].max_x;
                 // XXX hack uncomment below 2 line if the empty gap at the end of the downsampled graph annoys you, or comment them out to remove this 'feature'
-                if (!points[i].unusedCapacity())
-                    graphs[i]->maxx() = points[i].last().x;
+                //if (!points[i].unusedCapacity())
+                //    graphs[i]->maxx() = points[i].last().x;
             } 
             // and, notify graph of new points
             graphs[i]->setPoints(&pts[i]);
@@ -713,6 +713,8 @@ void GraphsWindow::setDownsampling(bool checked)
     {
         QMutexLocker l(&graphsMut);
 
+        dsLeftOver = 0;
+
         if (checked?1:0 != downsampleChk->isChecked()?1:0) {
             downsampleChk->blockSignals(true);
             downsampleChk->setChecked(checked);
@@ -735,7 +737,6 @@ void GraphsWindow::setDownsampling(bool checked)
         }
         for (int i = 0; i < graphs.size(); ++i)
             setGraphTimeSecs(i, graphTimesSecs[i]); // clear the points and reserve the right capacities.
-        update_nPtsAllGs();
         QSettings settings("janelia.hhmi.org", APPNAME);
         settings.beginGroup("GraphsWindow");
         settings.setValue("downsample",checked);
@@ -1047,7 +1048,6 @@ void GraphsWindow::graphSecsChanged(double secs)
 
     int num = selectedGraph;
     setGraphTimeSecs(num, secs);
-    update_nPtsAllGs();    
 
 	saveGraphSettings();
 }
@@ -1079,7 +1079,6 @@ void GraphsWindow::applyAll()
 		graphStates[i].yscale = scale;
 		graphStates[i].graph_Color = c;
     }
-    update_nPtsAllGs(); 
 
 	saveGraphSettings();
 }
@@ -1564,8 +1563,6 @@ void GraphsWindow::loadGraphSettings()
 		}
 	}
 	settings.endGroup();
-
-	update_nPtsAllGs();
 }
 
 void GraphsWindow::saveGraphSettings()
