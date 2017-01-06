@@ -614,12 +614,13 @@ void GraphsWindow::putScans(const int16 * data, unsigned DSIZE, u64 firstSamp)
         int idx = 0, scannum = dsLeftOver;
         const int maximizedIdx = (maximized ? parseGraphNum(maximized) : -1);
 
-        QBitArray ok2put(SCANSIZE,false);
-        int okct = 0, okctmax = SCANSIZE;
-        for (int i = 0; i < SCANSIZE; ++i) if (!graphs[i]) --okctmax; // if on another page, will always fail the ok test so make the ok test only look at graphs that have a .capacity()
+        int maxcap = 0;
+        for (int i = 0; i < SCANSIZE; ++i) if (int(pts[i].capacity()) > maxcap) maxcap = int(pts[i].capacity());
 
         bool needFilter = filter;
         if (needFilter) scanTmp.resize(SCANSIZE);
+        dsLeftOver -= DSCANS;
+        if (dsLeftOver < 0) dsLeftOver = 0;
         for (int i = startpt; i < (int)DSIZE; ++i) {
             if (needFilter) {
                 memcpy(&scanTmp[0], &data[i], SCANSIZE*sizeof(int16));
@@ -627,13 +628,11 @@ void GraphsWindow::putScans(const int16 * data, unsigned DSIZE, u64 firstSamp)
                 DPTR = (&scanTmp[0])-i;//fudge DPTR.. dangerous but below code always accesses it as DPTR[i], so it's ok
                 needFilter = false;
             }
-            Vec2fWrapBuffer & pbuf = pts[idx];
-            bool newok = false;
-            if (okct >= okctmax || ok2put.testBit(idx) || (newok=(int(pbuf.capacity()) >= DSCANS-scannum) )) {
-                if (newok) ok2put.setBit(idx, true), ++okct;
+            if (maxcap >= DSCANS-scannum) {
                 if ( graphs[idx] && !pgraphs[idx] && (maximizedIdx < 0 || maximizedIdx == idx)) {
                     v.x = t;
                     v.y = DPTR[i] / 32768.0; // hardcoded range of data
+                    Vec2fWrapBuffer & pbuf = pts[idx];
                     GraphStats & gs = graphStats[idx];
                     if (!pbuf.unusedCapacity()) {
                         const double val = pbuf.first().y;
@@ -654,6 +653,8 @@ void GraphsWindow::putScans(const int16 * data, unsigned DSIZE, u64 firstSamp)
                 scannum += DOWNSAMPLE_RATIO;
                 if (scannum >= DSCANS)
                     dsLeftOver = (scannum - DSCANS)%DOWNSAMPLE_RATIO;
+                else
+                    dsLeftOver = 0;
                 if ((i+1) % SCANSIZE) {
                     Warning() << "i+1 mod SCANSIZE is nonzero!";
                     i -= (i+1) % SCANSIZE;
@@ -667,6 +668,9 @@ void GraphsWindow::putScans(const int16 * data, unsigned DSIZE, u64 firstSamp)
             if (pgraphs[i] || !graphs[i]) continue;
             // now, copy in temp data
             if (graphs[i] && pts[i].size() >= 2) {
+#if 0
+                // the below code always draws new data from left of graph, then scrolls.. this is kind of broken though
+
                 // now, readjust x axis begin,end
                 graphStates[i].min_x = pts[i].first().x;
                 graphs[i]->minx() = graphStates[i].min_x;
@@ -675,6 +679,14 @@ void GraphsWindow::putScans(const int16 * data, unsigned DSIZE, u64 firstSamp)
                 // XXX hack uncomment below 2 line if the empty gap at the end of the downsampled graph annoys you, or comment them out to remove this 'feature'
                 //if (!points[i].unusedCapacity())
                 //    graphs[i]->maxx() = points[i].last().x;
+#else
+                // the below code always draws new data at right of graph, then scrolls
+                // now, readjust x axis begin,end
+                graphStates[i].max_x = pts[i].last().x;
+                graphs[i]->maxx() = graphStates[i].max_x;
+                graphStates[i].min_x = graphStates[i].max_x - graphTimesSecs[i];
+                graphs[i]->minx() = graphStates[i].min_x;
+#endif
             } 
             // and, notify graph of new points
             graphs[i]->setPoints(&pts[i]);
