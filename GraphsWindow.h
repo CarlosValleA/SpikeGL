@@ -204,7 +204,7 @@ private:
     QVector<GraphStats> graphStats; ///< mean/stddev stuff
 	QVector<GLGraphState> graphStates; ///< used to maintain internal glgraph state for graph re-use...
     volatile double downsampleRatio;
-    int dsLeftOver;
+    int dsLeftOver, dsMaxNPts;
     double tNow, tLast, tAvg, tNum;
     int pdChan, firstExtraChan;
     QAction *pauseAct, *maxAct, *applyAllAct;

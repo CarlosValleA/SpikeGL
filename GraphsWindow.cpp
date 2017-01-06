@@ -80,7 +80,7 @@ static void initIcons()
 }
 
 GraphsWindow::GraphsWindow(DAQ::Params & p, QWidget *parent, bool isSaving, bool useTabs, int graphUpdateRateHz)
-    : QMainWindow(parent), threadsafe_is_visible(false), params(p), useTabs(useTabs), downsampleRatio(1.), dsLeftOver(0), tNow(0.), tLast(0.), tAvg(0.), tNum(0.), filter(0), modeCaresAboutSGL(false), modeCaresAboutPD(false), suppressRecursive(false), graphsMut(QMutex::Recursive)
+    : QMainWindow(parent), threadsafe_is_visible(false), params(p), useTabs(useTabs), downsampleRatio(1.), dsLeftOver(0), dsMaxNPts(-1), tNow(0.), tLast(0.), tAvg(0.), tNum(0.), filter(0), modeCaresAboutSGL(false), modeCaresAboutPD(false), suppressRecursive(false), graphsMut(QMutex::Recursive)
 {
     sharedCtor(p, isSaving, graphUpdateRateHz);
 }
@@ -584,7 +584,8 @@ void GraphsWindow::setGraphTimeSecs(int num, double t)
 	}
 	graphStates[num].max_x = graphStates[num].min_x+t;
     graphStats[num].clear();
-    // NOTE: someone should call update_nPtsAllGs() after this!
+
+    dsMaxNPts = -1; // signal to recompute this value next call to putScans()
 
     // notify potential listener such as spatial vis window which may care about how many points are visible
     emit graphTimeSecsChanged(num,t);
@@ -614,8 +615,11 @@ void GraphsWindow::putScans(const int16 * data, unsigned DSIZE, u64 firstSamp)
         int idx = 0, scannum = dsLeftOver;
         const int maximizedIdx = (maximized ? parseGraphNum(maximized) : -1);
 
-        int maxcap = 0;
-        for (int i = 0; i < SCANSIZE; ++i) if (int(pts[i].capacity()) > maxcap) maxcap = int(pts[i].capacity());
+        if (dsMaxNPts < 0) {
+            for (int i = 0; i < SCANSIZE; ++i)
+                if (int(pts[i].capacity()) > dsMaxNPts)
+                    dsMaxNPts = int(pts[i].capacity());
+        }
 
         bool needFilter = filter;
         if (needFilter) scanTmp.resize(SCANSIZE);
@@ -628,7 +632,7 @@ void GraphsWindow::putScans(const int16 * data, unsigned DSIZE, u64 firstSamp)
                 DPTR = (&scanTmp[0])-i;//fudge DPTR.. dangerous but below code always accesses it as DPTR[i], so it's ok
                 needFilter = false;
             }
-            if (maxcap >= DSCANS-scannum) {
+            if (dsMaxNPts >= DSCANS-scannum) {
                 if ( graphs[idx] && !pgraphs[idx] && (maximizedIdx < 0 || maximizedIdx == idx)) {
                     v.x = t;
                     v.y = DPTR[i] / 32768.0; // hardcoded range of data
