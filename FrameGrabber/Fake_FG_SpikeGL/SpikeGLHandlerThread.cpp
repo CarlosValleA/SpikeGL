@@ -82,9 +82,8 @@ void SpikeGLOutThread::threadFunc()
 {
 #ifdef Q_OS_WIN
     _setmode(_fileno(stdout), O_BINARY);
-#else
-    freopen(0, "wb", stdout);
 #endif
+    freopen(0, "wb", stdout);
     while (!pleaseStop) {
         int ct = 0;
         if (mut.tryLock(100)) {
@@ -109,9 +108,8 @@ void SpikeGLInputThread::threadFunc()
 {
 #ifdef Q_OS_WIN
     _setmode(_fileno(stdin), O_BINARY);
-#else
-    freopen(0,"rb",stdin);
 #endif
+    freopen(0,"rb",stdin);
     std::vector<unsigned char> buf;
     XtCmd *xt = 0;
     while (!pleaseStop) {
