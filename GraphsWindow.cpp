@@ -601,6 +601,7 @@ void GraphsWindow::putScans(const int16 * data, unsigned DSIZE, u64 firstSamp)
         const int DOWNSAMPLE_RATIO(dsr<1?1:dsr);
         const double SRATE (params.srate > 0. ? params.srate : 0.01);
         const int DSCANS = int(DSIZE/unsigned(SCANSIZE));
+        const int DSCANS_DS = DSCANS/DOWNSAMPLE_RATIO;
         // avoid some operator[] and others..
         const int16 * DPTR = &data[0];
         const bool * const pgraphs = &pausedGraphs[0];
@@ -621,6 +622,11 @@ void GraphsWindow::putScans(const int16 * data, unsigned DSIZE, u64 firstSamp)
                     dsMaxNPts = int(pts[i].capacity());
         }
 
+        /*int NPTS_RCVD = DSCANS/DOWNSAMPLE_RATIO;
+        if (dsMaxNPts < NPTS_RCVD) {
+            Warning() << "dsMaxNPts=" << dsMaxNPts << ", NPTS_RCVD=" << NPTS_RCVD;
+        }*/
+
         bool needFilter = filter;
         if (needFilter) scanTmp.resize(SCANSIZE);
         dsLeftOver -= DSCANS;
@@ -632,7 +638,7 @@ void GraphsWindow::putScans(const int16 * data, unsigned DSIZE, u64 firstSamp)
                 DPTR = (&scanTmp[0])-i;//fudge DPTR.. dangerous but below code always accesses it as DPTR[i], so it's ok
                 needFilter = false;
             }
-            if (dsMaxNPts >= DSCANS-scannum) {
+            if (dsMaxNPts >= DSCANS_DS-(scannum*DOWNSAMPLE_RATIO)) {
                 if ( graphs[idx] && !pgraphs[idx] && (maximizedIdx < 0 || maximizedIdx == idx)) {
                     v.x = t;
                     v.y = DPTR[i] / 32768.0; // hardcoded range of data
