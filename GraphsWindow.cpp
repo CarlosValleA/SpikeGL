@@ -613,7 +613,7 @@ void GraphsWindow::putScans(const int16 * data, unsigned DSIZE, u64 firstSamp)
         const double deltaT =  1.0/SRATE * DOWNSAMPLE_RATIO;
         // now, push new points to back of each graph, downsampling if need be
         Vec2f v;
-        int idx = 0, scannum = dsLeftOver;
+        int idx = 0, scannum = dsLeftOver, scannum_ds = scannum/DOWNSAMPLE_RATIO;
         const int maximizedIdx = (maximized ? parseGraphNum(maximized) : -1);
 
         if (dsMaxNPts < 0) {
@@ -638,7 +638,7 @@ void GraphsWindow::putScans(const int16 * data, unsigned DSIZE, u64 firstSamp)
                 DPTR = (&scanTmp[0])-i;//fudge DPTR.. dangerous but below code always accesses it as DPTR[i], so it's ok
                 needFilter = false;
             }
-            if (dsMaxNPts >= DSCANS_DS-(scannum*DOWNSAMPLE_RATIO)) {
+            if (dsMaxNPts >= DSCANS_DS-scannum_ds) {
                 if ( graphs[idx] && !pgraphs[idx] && (maximizedIdx < 0 || maximizedIdx == idx)) {
                     v.x = t;
                     v.y = DPTR[i] / 32768.0; // hardcoded range of data
@@ -661,6 +661,7 @@ void GraphsWindow::putScans(const int16 * data, unsigned DSIZE, u64 firstSamp)
                 t += deltaT;
                 i = int((i-SCANSIZE) + DOWNSAMPLE_RATIO*SCANSIZE);
                 scannum += DOWNSAMPLE_RATIO;
+                ++scannum_ds;
                 if (scannum >= DSCANS)
                     dsLeftOver = (scannum - DSCANS)%DOWNSAMPLE_RATIO;
                 else
