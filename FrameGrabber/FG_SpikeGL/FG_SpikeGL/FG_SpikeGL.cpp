@@ -27,12 +27,13 @@ unsigned long long frameNum = 0;
 
 std::string shmName("COMES_FROM_XtCmd");
 unsigned shmSize(0), shmPageSize(0), shmMetaSize(0);
-std::vector<char> metaBuffer; unsigned long long *metaPtr = 0; int metaIdx = 0, metaMaxIdx = 0;
+std::vector<char> metaBuffer; unsigned int *metaPtr = 0; int metaIdx = 0, metaMaxIdx = 0;
 std::vector<int> chanMapping;
 
 void *sharedMemory = 0;
 PagedScanWriter *writer = 0;
 unsigned nChansPerScan = 0;
+bool extraAI = false;
 
 static HANDLE hShm = 0;
 
@@ -41,8 +42,8 @@ static void probeHardware();
 static double getTime();
 
 static inline void metaPtrInc() { if (++metaIdx >= metaMaxIdx) metaIdx = 0; }
-static inline unsigned long long & metaPtrCur() { 
-    static unsigned long long dummy = 0; 
+static inline unsigned int & metaPtrCur() { 
+    static unsigned int dummy = 0; 
     if (metaPtr && metaIdx < metaMaxIdx) return metaPtr[metaIdx];
     return dummy;
 }
@@ -111,7 +112,7 @@ static void acqCallback(SapXferCallbackInfo *info)
         return;
     }
 
-    size_t nScansInFrame = len / oneScanBytes;
+	size_t nScansInFrame = (len + (extraAI ? 4 : 0)) / oneScanBytes;
 
     if (!nScansInFrame) {
         spikeGL->pushConsoleError("Frame must contain at least 1 full scan! FIXME!");
@@ -184,8 +185,9 @@ static void acqCallback(SapXferCallbackInfo *info)
         writer->writePartialBegin();
         for (int line = 0; line < h; ++line) {
 //            if (1) { // no swab
-                if (line + 1 == h) {
-                    metaPtrCur() = *reinterpret_cast<const unsigned long long *>(pc + line*pitch);
+                bool lastIter = false;
+                if ((lastIter = (line + 1 == h))) {
+                    metaPtrCur() = *reinterpret_cast<const unsigned int *>(pc + line*pitch);
                     metaPtrInc();
                 }
                 if (!writer->writePartial(pc + /* <HACK> */ 8 /* </HACK> */ + (line*pitch), w, metaPtr)) {
@@ -194,6 +196,18 @@ static void acqCallback(SapXferCallbackInfo *info)
                     writer->writePartialEnd();
                     xfer->Abort();
                     return;
+                }
+                if (extraAI && lastIter) {
+                    const unsigned short *ais_in = (const unsigned short *)(pc + 4 + line*pitch);
+                    short ais[2];
+                    ais[0] = static_cast<short>(int(ais_in[0]) - 32768); // convert unsigned to signed 16 bit
+                    ais[1] = static_cast<short>(int(ais_in[1]) - 32768); // ditto
+                    if (!writer->writePartial((const char *)ais, 4, metaPtr)) {
+                        spikeGL->pushConsoleError("PagedScanWriter::writePartial() for AI chans returned false!");
+                        writer->writePartialEnd();
+                        xfer->Abort();
+                        return;
+                    }
                 }
  /*           } else { // swab
                 if (line + 1 == h) {
@@ -227,7 +241,7 @@ static void acqCallback(SapXferCallbackInfo *info)
     } else {
         // NOTE: this case is calin's test code.. we fudge the metadata .. even though it makes no sense at all.. to make sure SpikeGL is reading it properly
         metaIdx = metaMaxIdx - 1;
-        metaPtrCur() = frameNum;  // HACK!
+        metaPtrCur() = static_cast<unsigned int>(frameNum);  // HACK!
 
         /*
         // test channel reordering here..
@@ -368,8 +382,8 @@ static bool setupAndStartAcq()
     freeSapHandles();
 
     metaBuffer.resize(shmMetaSize,0);
-    metaPtr = shmMetaSize ? reinterpret_cast<unsigned long long *>(&metaBuffer[0]) : 0;
-    metaIdx = 0; metaMaxIdx = shmMetaSize / sizeof(unsigned long long);
+    metaPtr = shmMetaSize ? reinterpret_cast<unsigned int *>(&metaBuffer[0]) : 0;
+    metaIdx = 0; metaMaxIdx = shmMetaSize / sizeof(unsigned int);
 
     if (!sharedMemory) {
         char tmp[512];
@@ -507,6 +521,7 @@ static void handleSpikeGLCommand(XtCmd *xt)
             if (chanMapping.size() > maxsize) chanMapping.resize(maxsize);
             memcpy(&chanMapping[0], x->mapping, chanMapping.size()*sizeof(int));
         }
+        extraAI = x->use_extra_ai;
         if (!setupAndStartAcq())
             spikeGL->pushConsoleWarning("Failed to start acquisition.");
         break;
