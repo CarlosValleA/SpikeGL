@@ -24,17 +24,19 @@ static volatile bool acq = false; ///< true iff acquisition is running
 
 int desiredWidth = 144;
 int desiredHeight = 32;
-unsigned long long tsCounter = 0, frameNum = 0;
+unsigned long long frameNum = 0;
+unsigned int tsCounter = 0;
 
 std::string shmName("COMES_FROM_XtCmd");
 unsigned shmSize(0), shmPageSize(0), shmMetaSize(0);
-std::vector<char> metaBuffer; unsigned long long *metaPtr = 0; int metaIdx = 0, metaMaxIdx = 0;
+std::vector<char> metaBuffer; unsigned int *metaPtr = 0; int metaIdx = 0, metaMaxIdx = 0;
 std::vector<int> chanMapping;
 
 QSharedMemory *qsm = 0;
 void *sharedMemory = 0;
 PagedScanWriter *writer = 0;
 unsigned nChansPerScan = 0;
+bool extraAI = false;
 
 class XferEmu;
 XferEmu *xfer = 0;
@@ -58,8 +60,8 @@ static void probeHardware();
 static double getTime();
 
 static inline void metaPtrInc() { if (++metaIdx >= metaMaxIdx) metaIdx = 0; }
-static inline unsigned long long & metaPtrCur() { 
-    static unsigned long long dummy = 0; 
+static inline unsigned int & metaPtrCur() {
+    static unsigned int dummy = 0;
     if (metaPtr && metaIdx < metaMaxIdx) return metaPtr[metaIdx];
     return dummy;
 }
@@ -87,23 +89,32 @@ static int PSWErrFunc(const char *fmt, ...)
     return ret;
 }
 
-void genFakeFrame(char *buf, int pitch, int height, unsigned long long  & ctr, unsigned long long & fnum) {
+void genFakeFrame(char *buf, int pitch, int height, unsigned int & ctr, unsigned long long & fnum) {
     float v = (int(fnum)%52000)/52000.0f;
     v = v * M_PI;
     for (int r = 0; r < height; ++r) {
         char *l0 = &buf[r*pitch], *pc = (char *)&ctr;
-        l0[4] = pc[0]; l0[3] = pc[1]; l0[2] = pc[2]; l0[0] = pc[3];
-        l0[7] = pc[4]; l0[6] = pc[5]; l0[5] = pc[6]; l0[4] = pc[7];
+        //l0[4] = pc[0]; l0[3] = pc[1]; l0[2] = pc[2]; l0[0] = pc[3];
+        //l0[7] = pc[4]; l0[6] = pc[5]; l0[5] = pc[6]; l0[4] = pc[7];  no longer 64bit counter...
+
+        // 32-bit counter..
+        l0[0] = pc[3]; l0[1] = pc[2]; l0[2] = pc[1]; l0[3] = pc[0];
+
         for (int c = 8; c < pitch; c+=2) {
             short *s = (short *)&buf[r*pitch + c];
             float cfrac = (float(c)/152.f);
             if (c%2) *s = ::sinf(v * (80.0f * cfrac) + cfrac*10.f) * 20000;
             else     *s = ::cosf(v * (80.0f * cfrac) + cfrac*10.f) * 20000;
         }
-        ctr += 88ULL;
+        if (extraAI) {
+            unsigned short *ais = (unsigned short *)(l0+4);
+            ais[0] = static_cast<unsigned short>(((::sinf(v) + 1.0f)/2.0f) * 65535.0f);
+            ais[1] = static_cast<unsigned short>(((::cosf(v) + 1.0f)/2.0f) * 65535.0f);
+        }
+        ctr += 88U;
     }
     // end of frame counter update...
-    ctr += 88ULL*2ULL;
+    ctr += 88U*2U;
     ++fnum;
 }
 
@@ -142,7 +153,7 @@ static void writeFakeFrame()
         return;
     }
 
-    size_t nScansInFrame = len / oneScanBytes;
+    size_t nScansInFrame = (len+(extraAI ? 4 : 0)) / oneScanBytes;
 
     if (!nScansInFrame) {
         spikeGL->pushConsoleError("Frame must contain at least 1 full scan! FIXME!");
@@ -211,8 +222,9 @@ static void writeFakeFrame()
 #endif
         writer->writePartialBegin();
         for (int line = 0; line < h; ++line) {
-                if (line + 1 == h) {
-                    metaPtrCur() = *reinterpret_cast<const unsigned long long *>(pc + line*pitch);
+                bool lastIter = false;
+                if ((lastIter = (line + 1 == h))) {
+                    metaPtrCur() = *reinterpret_cast<const unsigned int *>(pc + line*pitch);
                     metaPtrInc();
                 }
                 if (!writer->writePartial(pc + /* <HACK> */ 8 /* </HACK> */ + (line*pitch), w, metaPtr)) {
@@ -221,8 +233,19 @@ static void writeFakeFrame()
                     xfer->abort();
                     return;
                 }
+                if (extraAI && lastIter) {
+                    const unsigned short *ais_in = (const unsigned short *)(pc + 4 + line*pitch);
+                    short ais[2];
+                    ais[0] = static_cast<short>(int(ais_in[0]) - 32768);
+                    ais[1] = static_cast<short>(int(ais_in[1]) - 32768);
+                    if (!writer->writePartial((const char *)ais, 4, metaPtr)) {
+                        spikeGL->pushConsoleError("PagedScanWriter::writePartial() for AI chans returned false!");
+                        writer->writePartialEnd();
+                        xfer->abort();
+                        return;
+                    }
+                }
         }
-
         if (!writer->writePartialEnd()) {
             spikeGL->pushConsoleError("PagedScanWriter::writePartialEnd() returned false!");
             xfer->abort();
@@ -302,8 +325,8 @@ static bool setupAndStartAcq()
     freeHandles();
 
     metaBuffer.resize(shmMetaSize,0);
-    metaPtr = shmMetaSize ? reinterpret_cast<unsigned long long *>(&metaBuffer[0]) : 0;
-    metaIdx = 0; metaMaxIdx = shmMetaSize / sizeof(unsigned long long);
+    metaPtr = shmMetaSize ? reinterpret_cast<unsigned int *>(&metaBuffer[0]) : 0;
+    metaIdx = 0; metaMaxIdx = shmMetaSize / sizeof(unsigned int);
 
     if (!sharedMemory) {
         char tmp[512];
@@ -379,6 +402,7 @@ static void handleSpikeGLCommand(XtCmd *xt)
             if (chanMapping.size() > maxsize) chanMapping.resize(maxsize);
             memcpy(&chanMapping[0], x->mapping, chanMapping.size()*sizeof(int));
         }
+        extraAI = x->use_extra_ai;
         if (!setupAndStartAcq())
             spikeGL->pushConsoleWarning("Failed to start acquisition.");
         break;

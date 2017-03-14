@@ -1010,7 +1010,7 @@ bool MainApp::startAcq(QString & errTitle, QString & errMsg)
         task = bugtask = new DAQ::BugTask(params, this, *reader);
     } else if (doFGAcqInstead) {
         delete reader; // need to force the page size to something that supports metadata
-        unsigned metaSzPerPage = 0, metaBytesPerScan = sizeof(unsigned long long); // just take the latest 64-bit timestamp value per scan.. even though FPGA gives us a value per row
+        unsigned metaSzPerPage = 0, metaBytesPerScan = sizeof(unsigned int); // just take the latest 32-bit timestamp value per scan.. even though FPGA gives us a value per row
         unsigned pgSize = computeSamplesShmPageSize(params.srate, params.nVAIChans, params.lowLatency, metaBytesPerScan, &metaSzPerPage);
         reader = new PagedScanReader(params.nVAIChans, metaSzPerPage, samplesBuffer, shmSizeBytes, pgSize);
         task = fgtask = new DAQ::FGTask(params, this, *reader);
@@ -1466,8 +1466,8 @@ bool MainApp::taskReadFunc()
                 useAltTrigIdx = p.bug.backupTrigger, altTrigThresh = p.bug.backupTriggerThresh;
             }
         } else if (metaPtr && reader->metaDataSizeBytes() && fgTask()) {
-            const unsigned long long *m = reinterpret_cast<unsigned long long *>(metaPtr); // recast metadata to a series of 64 bit ints
-            int idx = (reader->metaDataSizeBytes() - sizeof(*m)) / sizeof(*m); // take the last 64bit int from the buffer
+            const unsigned int *m = reinterpret_cast<unsigned int *>(metaPtr); // recast metadata to a series of 32 bit ints
+            int idx = (reader->metaDataSizeBytes() - sizeof(*m)) / sizeof(*m); // take the last 32bit int from the buffer
             if (idx > -1) fgTask()->updateTimesampLabel(m[idx]);
         }
 

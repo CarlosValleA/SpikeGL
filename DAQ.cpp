@@ -2416,20 +2416,20 @@ namespace DAQ
         dialog->fpsLbl->setText(QString::number(fps));
     }
 
-    void FGTask::updateTimesampLabel(unsigned long long ts)
+    void FGTask::updateTimesampLabel(unsigned int ts)
     {
         QMutexLocker l(&lastScanTSMut);
         lastScanTS = ts;
     }
 
     void FGTask::do_updateTimestampLabel() {
-        unsigned long long ts = 0;
+        unsigned int ts = 0;
         char *pts = (char *)&ts;
         lastScanTSMut.lock();
         // swab bytes -- added 1/4/2017 as Jim Chen updated FPGA code to send us a timestamp as first 32 bits of line
         volatile char *p = (volatile char *)&lastScanTS;
         pts[0] = p[3]; pts[1] = p[2]; pts[2] = p[1]; pts[3] = p[0]; // weird format.. swab first 4 bytes
-        pts[4] = p[7]; pts[5] = p[6]; pts[6] = p[5]; pts[7] = p[4];  // weird format.. swab last 4 bytes
+        //pts[4] = p[7]; pts[5] = p[6]; pts[6] = p[5]; pts[7] = p[4];  // weird format.. swab last 4 bytes
         lastScanTSMut.unlock();
         QString txt = QString::number(ts);
         dialog->timestampLbl->setText(txt);
@@ -2690,7 +2690,7 @@ channel #32 & #64  64‐bit           8‐bit 8‐bit 8‐bit 8‐bit 8‐bit 8�
 
         // grab frames.. does stuff with Sapera API in the slave process
         XtCmdGrabFrames x;
-        x.init(mainApp()->qsmNativeKey().toUtf8().constData(), writer.totalSize(), writer.pageSize(), writer.metaDataSizeBytes(), "J_2000+_Electrode_8tap_8bit.ccf", 144, 32, NumChans, 0/*getDefaultMapping(0)*/);
+        x.init(mainApp()->qsmNativeKey().toUtf8().constData(), writer.totalSize(), writer.pageSize(), writer.metaDataSizeBytes(), "J_2000+_Electrode_8tap_8bit.ccf", 144, 32, params.nVAIChans, 0/*getDefaultMapping(0)*/, params.nExtraChans1+params.nExtraChans2>0 ? true : false);
         pushCmd(x);
     }
 

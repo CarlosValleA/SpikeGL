@@ -200,8 +200,9 @@ struct XtCmdGrabFrames : public XtCmd {
     int numChansPerScan; ///< size of 1 full scan, in 16-bit samples.  If the incoming frame is larger than 1 scan, it will be chopped up into multiple frames, 1 per scan, when sent back to spikegl
     int use_map;
     int mapping[8192];
+    bool use_extra_ai;
 
-    void init(const std::string & nam, unsigned shmSz, unsigned pageSz, unsigned metaSz, const std::string &ccf, unsigned w, unsigned h, unsigned scanSize, const int *map = 0) {
+    void init(const std::string & nam, unsigned shmSz, unsigned pageSz, unsigned metaSz, const std::string &ccf, unsigned w, unsigned h, unsigned scanSize, const int *map = 0, bool extraAI = false) {
         XtCmd::init();
         cmd = XtCmd_GrabFrames;
         strncpy(ccfFile, ccf.c_str(), sizeof(ccfFile) - 1);  ccfFile[sizeof(ccfFile)-1] = 0;
@@ -217,6 +218,7 @@ struct XtCmdGrabFrames : public XtCmd {
             if (nbytes > (int)sizeof(mapping)) nbytes = sizeof(mapping);
             memcpy(mapping, map, nbytes);
         }
+        use_extra_ai = extraAI;
     }
 };
 

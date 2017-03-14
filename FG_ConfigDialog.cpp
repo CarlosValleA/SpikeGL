@@ -122,7 +122,7 @@ int FG_ConfigDialog::exec()
 				p.suppressGraphs = false; //dialog->disableGraphsChk->isChecked();
 				p.resumeGraphSettings = false; //dialog->resumeGraphSettingsChk->isChecked();
 				
-                p.nVAIChans =  DAQ::FGTask::NumChans;
+                p.nVAIChans =  DAQ::FGTask::NumChans + (p.fg.extraAI ? 2 : 0);
 				p.nVAIChans1 = p.nVAIChans;
 				p.nVAIChans2 = 0;
 				p.aiChannels2.clear();
@@ -181,7 +181,7 @@ int FG_ConfigDialog::exec()
 
 				// this stuff doesn't need to be saved since it's constant and will mess up regular acq "remembered" values
                 p.dev = "Framegrabber";
-				p.nExtraChans1 = 0;
+                p.nExtraChans1 = p.fg.extraAI ? 2 : 0;
 				p.nExtraChans2 = 0;
 				
 				p.extClock = true;
@@ -197,15 +197,21 @@ int FG_ConfigDialog::exec()
 				DAQ::Range rminmax(1e9,-1e9);
 				for (unsigned i = 0; i < p.nVAIChans; ++i) {
 					DAQ::Range r;
-                    int chan_id_for_display = i;
-                    //r.min = -5., r.max = 5.;
-                    r.min = -0.00638976; r.max = 0.006389565; // hardcoded range of framegrabber intan voltages...
-					// since ttl lines may be missing in channel set, renumber the ones that are missing for display purposes
-						
-					if (rminmax.min > r.min) rminmax.min = r.min;
-					if (rminmax.max < r.max) rminmax.max = r.max;
-					p.customRanges[i] = r;
-                    p.chanDisplayNames[i] = DAQ::FGTask::getChannelName(chan_id_for_display, &p.chanMap);
+                    if (i < p.nVAIChans-(p.nExtraChans1+p.nExtraChans2)) {
+                        int chan_id_for_display = i;
+                        //r.min = -5., r.max = 5.;
+                        r.min = -0.00638976; r.max = 0.006389565; // hardcoded range of framegrabber intan voltages...
+                        // since ttl lines may be missing in channel set, renumber the ones that are missing for display purposes
+
+                        if (rminmax.min > r.min) rminmax.min = r.min;
+                        if (rminmax.max < r.max) rminmax.max = r.max;
+                        p.customRanges[i] = r;
+                        p.chanDisplayNames[i] = DAQ::FGTask::getChannelName(chan_id_for_display, &p.chanMap);
+                    } else { // extra AI channels...
+                        r.min = 0.0; r.max = 5.0;
+                        p.customRanges[i] = r;
+                        p.chanDisplayNames[i] = QString("ExtraAI%1").arg(i-(p.nVAIChans-(p.nExtraChans1+p.nExtraChans2)));
+                    }
 				}
 				p.range = rminmax;
 				p.auxGain = 1.0;

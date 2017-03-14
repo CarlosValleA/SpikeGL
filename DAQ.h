@@ -549,7 +549,7 @@ namespace DAQ
 
         QDialog *dialogW;
 
-        void updateTimesampLabel(unsigned long long ts);
+        void updateTimesampLabel(unsigned int ts);
 
     protected:
         int readTimeoutMaxSecs() const { return 9999; }
@@ -585,7 +585,7 @@ namespace DAQ
         bool sentFGCmd, didImgSizeWarn;
         Ui::FG_Controls *dialog;
         bool need2EmitFirstScan;
-        volatile unsigned long long lastScanTS; QMutex lastScanTSMut;
+        volatile unsigned int lastScanTS; QMutex lastScanTSMut;
 	};
 	
 
