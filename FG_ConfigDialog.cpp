@@ -117,6 +117,7 @@ int FG_ConfigDialog::exec()
                 DAQ::FGTask::Hardware hw = DAQ::FGTask::probedHardware.at(dialog->sapdevCB->currentIndex());
                 p.fg.sidx = hw.serverIndex;
                 p.fg.ridx = hw.resourceIndex;
+                p.fg.extraAI = dialog->aiExtraChk->isChecked();
 
 				p.suppressGraphs = false; //dialog->disableGraphsChk->isChecked();
 				p.resumeGraphSettings = false; //dialog->resumeGraphSettingsChk->isChecked();
@@ -262,6 +263,7 @@ void FG_ConfigDialog::guiFromSettings()
     dialog->stop->setCurrentIndex(p.fg.stop);
     dialog->graphUpdateRateHzSB->setValue(p.graphUpdateRate);
     dialog->spatialVisUpdateRateHzSB->setValue(p.spatialVisUpdateRate);
+    dialog->aiExtraChk->setChecked(p.fg.extraAI);
 
     dialog->graphsPerTabCB->clear();
     dialog->graphsPerTabCB->addItem("Default");

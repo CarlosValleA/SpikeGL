@@ -182,7 +182,8 @@ namespace DAQ
             int com,baud,bits,parity,stop;
             QString chanMapText;
             int spatialRows, spatialCols;
-            void reset() { enabled = false; com=1,baud=1,bits=0,parity=0,stop=0; sidx=1; ridx=0; disableChanMap = false; spatialRows=spatialCols=0; }
+            bool extraAI;
+            void reset() { enabled = false; com=1,baud=1,bits=0,parity=0,stop=0; sidx=1; ridx=0; disableChanMap = false; spatialRows=spatialCols=0; extraAI=false; }
 		} fg;
 		
         mutable QMutex mutex;

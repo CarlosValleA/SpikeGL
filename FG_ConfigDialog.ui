@@ -448,6 +448,25 @@ p, li { white-space: pre-wrap; }
     <number>6</number>
    </property>
   </widget>
+  <widget class="QCheckBox" name="aiExtraChk">
+   <property name="geometry">
+    <rect>
+     <x>180</x>
+     <y>250</y>
+     <width>201</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="toolTip">
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If checked, acquire 2 extra AI channels that are embedded into each FrameGrabber frame (these channels are 0-5V range). The channels are appended to the end of the scan, bringing the channel count per scan from 2304 to 2306.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+   </property>
+   <property name="whatsThis">
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If checked, acquire 2 extra AI channels that are embedded into each FrameGrabber frame (these channels are 0-5V range). The channels are appended to the end of the scan, bringing the channel count per scan from 2304 to 2306.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+   </property>
+   <property name="text">
+    <string>Acquire 2 Extra AI Channels (0-5V)</string>
+   </property>
+  </widget>
  </widget>
  <resources/>
  <connections>
@@ -484,7 +503,4 @@ p, li { white-space: pre-wrap; }
    </hints>
   </connection>
  </connections>
- <buttongroups>
-  <buttongroup name="configBG"/>
- </buttongroups>
 </ui>

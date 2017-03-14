@@ -1187,6 +1187,7 @@ void ConfigureDialogController::paramsFromSettingsObject(DAQ::Params & p, const 
     p.fg.ridx = settings.value("fg_ridx", 0).toInt();
     p.fg.disableChanMap = settings.value("fg_no_chan_map", false).toBool();
     p.fg.chanMapText = settings.value("fg_chanmap_txt", "").toString();
+    p.fg.extraAI = settings.value("fg_extra_ai", false).toBool();
 }
 
 void ConfigureDialogController::loadSettings()
@@ -1304,6 +1305,7 @@ void ConfigureDialogController::saveSettings(int sc) const
         settings.setValue("fg_ridx", p.fg.ridx);
         settings.setValue("fg_no_chan_map", p.fg.disableChanMap);
         settings.setValue("fg_chanmap_txt", p.fg.chanMapText);
+        settings.setValue("fg_extra_ai", p.fg.extraAI);
     }
 
 	settings.endGroup(); 
