@@ -249,6 +249,10 @@ int FG_ConfigDialog::exec()
                         r.min = 0.0; r.max = 5.0;
                         p.customRanges[i] = r;
                         p.chanDisplayNames[i] = QString("ExtraAI%1").arg(i-(p.nVAIChans-(p.nExtraChans1+p.nExtraChans2)));
+                        if (i >= (unsigned)p.chanMap.size()) {
+                            ChanMapDesc d; d.intan = 9999; d.intanCh = i-(p.nVAIChans-(p.nExtraChans1+p.nExtraChans2)); d.electrodeId = i;
+                            p.chanMap.push_back(d);
+                        }
                     }
 				}
 				p.range = rminmax;
