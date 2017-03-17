@@ -923,7 +923,7 @@ bool MainApp::startAcq(QString & errTitle, QString & errMsg)
         spatialDims = Vec2i(x,y);
     }
 
-    spatialWindow = new SpatialVisWindow(params, spatialDims, spatialBoxW, 0, doFGAcqInstead ? params.spatialVisUpdateRate : -1);
+    spatialWindow = new SpatialVisWindow(params, spatialDims, spatialBoxW, 0, doFGAcqInstead ? params.spatialVisUpdateRate : -1, doFGAcqInstead && params.fg.spatialVisSuppressExtraChans);
     spatialWindow->setSorting(graphsWindow->currentSorting(), graphsWindow->currentNaming());
     spatialWindow->setGraphTimesSecs(graphsWindow->getGraphTimesSecs());
     spatialWindow->setDownsampleRatio(graphsWindow->getDownsampleRatio());
@@ -1244,9 +1244,9 @@ bool MainApp::maybeCloseCurrentIfRunning()
     if (!task) return true;
     int but;
     if (dataFile.isOpen()) 
-        but = QMessageBox::question(0, "Stop Current Acquisition", QString("An acquisition is currently running and saving to %1.\nStop it before proceeding?").arg(dataFile.fileName()), QMessageBox::Yes, QMessageBox::No);
+        but = QMessageBox::question(0, "Stop Current Acquisition", QString("An acquisition is currently running and saving to %1.\nDo you wish to stop it?").arg(dataFile.fileName()), QMessageBox::Yes, QMessageBox::No);
     else
-        but = QMessageBox::question(0, "Stop Current Acquisition", QString("An acquisition is currently running.\nStop it before proceeding?"), QMessageBox::Yes, QMessageBox::No);        
+        but = QMessageBox::question(0, "Stop Current Acquisition", QString("An acquisition is currently running.\nDo you wish to stop it?"), QMessageBox::Yes, QMessageBox::No);
     if (but == QMessageBox::Yes) {
         stopTask();
         return true;

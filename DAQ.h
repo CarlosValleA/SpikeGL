@@ -183,7 +183,8 @@ namespace DAQ
             QString chanMapText;
             int spatialRows, spatialCols;
             bool extraAI;
-            void reset() { enabled = false; com=1,baud=1,bits=0,parity=0,stop=0; sidx=1; ridx=0; disableChanMap = false; spatialRows=spatialCols=0; extraAI=false; }
+            bool spatialVisSuppressExtraChans; ///< if true, the spatial vis window only shows the base MUXed channels and suppresses the nExtraChans1 and nExtraChans2 channels from its display.. defaults to true
+            void reset() { enabled = false; com=1,baud=1,bits=0,parity=0,stop=0; sidx=1; ridx=0; disableChanMap = false; spatialRows=spatialCols=0; extraAI=false; spatialVisSuppressExtraChans = true; }
 		} fg;
 		
         mutable QMutex mutex;

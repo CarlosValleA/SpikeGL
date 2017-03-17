@@ -1382,6 +1382,11 @@ namespace DAQ
 		for (QStringList::const_iterator it = files.begin(); it != files.end(); ++it) {
 			const QString bn ((*it).split("/").last());
             const QString dest (exeDir + bn);
+            if (bn.endsWith(".exe",Qt::CaseInsensitive)) {
+                if (Util::killAllInstancesOfProcessWithImageName(bn) > 0) {
+                    QThread::msleep(500); // wait for it to die
+                }
+            }
 			if (QFile::exists(dest) && !QFile::remove(dest)) {
 				if (errOut) *errOut = dest + " exists and cannot be removed.";
 				return false;

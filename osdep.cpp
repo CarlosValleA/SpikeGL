@@ -56,7 +56,7 @@ namespace {
     int killAllInstances(const char *exeImgName);
 #endif
 
-};
+}
 
 namespace Util {
 #undef NEED_RT_PRIO_AND_PROC_AFF_MASK
@@ -258,7 +258,6 @@ unsigned getNProcessors()
     return 1;
 }
 #endif
-
 #ifdef Q_OS_WIN
 unsigned getPid()
 {

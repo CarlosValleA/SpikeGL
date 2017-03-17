@@ -29,10 +29,14 @@
 #define GlyphScaleFactor 0.9725 /**< set this to less than 1 to give each glyph a margin */
 #define BlockScaleFactor 1.0 /**< set this to less than 1 to give blocks a margin */
 
-SpatialVisWindow::SpatialVisWindow(DAQ::Params & params, const Vec2i & xy_dims, unsigned selboxw, QWidget * parent, int updateRateHz)
-: QMainWindow(parent), threadsafe_is_visible(false), params(params), nvai(params.nVAIChans), nextra(params.nExtraChans1+params.nExtraChans2),
+SpatialVisWindow::SpatialVisWindow(DAQ::Params & params, const Vec2i & xy_dims, unsigned selboxw, QWidget * parent, int updateRateHz, bool suppressExtra)
+: QMainWindow(parent), threadsafe_is_visible(false), params(params), nvai(params.nVAIChans), nextra(params.nExtraChans1+params.nExtraChans2), suppressExtra(suppressExtra && nextra > 0),
   graph(0), graphFrame(0), mouseOverChan(-1), last_fs_frame_num(0xfDffffff), last_fs_frame_tsc(getAbsTimeNS()), mut(QMutex::Recursive)
 {
+    if (suppressExtra) {
+        nvai -= nextra; // NEW 3/17/2017 -- spatial vis doesn't show the extra AI channels in Framegrabber acquisition mode!
+        nextra = 0;
+    }
     can_redefine_selection_box = false;
     click_to_select = false;
     mouseDownAt = Vec2(-1e6,-1e6);
@@ -70,6 +74,17 @@ SpatialVisWindow::SpatialVisWindow(DAQ::Params & params, const Vec2i & xy_dims, 
 
 	toolBar = addToolBar("Spatial Visualization Controls");
 	
+    if (suppressExtra) {
+        QPushButton *b = new QPushButton("Go To AI Chans", toolBar);
+        QFont f (b->font());
+        f.setPointSize(f.pointSize()-1);
+        b->setFont(f);
+        b->setToolTip("Click here to open the 'Extra AI' chans in the Graphs Window");
+        toolBar->addWidget(b);
+        toolBar->addSeparator();
+        Connect(b, SIGNAL(clicked(bool)), this, SLOT(gotoExtraAIClicked()));
+    }
+
 	QLabel *label;
     toolBar->addWidget(label = new QLabel("Color: ", toolBar));
     toolBar->addWidget(colorBut = new QPushButton(toolBar));
@@ -473,6 +488,19 @@ void SpatialVisWindow::selectChansCenteredOn(int chan)
         ok = true;
     }
     selectChansFromTopLeft(ok?chan:-1);
+}
+
+void SpatialVisWindow::gotoExtraAIClicked()
+{
+    if (suppressExtra) {
+        int nx = params.nExtraChans1+params.nExtraChans2;
+        if (nx > 0 && nx < (int)params.nVAIChans) {
+            selectChansFromTopLeft(-1); // turn off selection
+            for (int i = 0; i < nx; ++i)
+                selIdxs.push_back(nvai+i);
+            if (selIdxs.size()) emit channelsSelected(selIdxs);
+        }
+    }
 }
 
 void SpatialVisWindow::mouseClickGraph(double x, double y)

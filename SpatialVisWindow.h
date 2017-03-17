@@ -29,7 +29,7 @@ class SpatialVisWindow : public QMainWindow, public GenericGrapher
 {
     Q_OBJECT
 public:
-    SpatialVisWindow(DAQ::Params & params, const Vec2i & xy_dims, unsigned selection_box_width, QWidget *parent = 0, int updateRateHz = -1 /* if >0, update graph this many times per second otherwise use default */);
+    SpatialVisWindow(DAQ::Params & params, const Vec2i & xy_dims, unsigned selection_box_width, QWidget *parent = 0, int updateRateHz = -1 /* if >0, update graph this many times per second otherwise use default */, bool suppressExtra = false /* if true, don't show extra chans in spatial vis insteead they are selectable via a button*/);
     ~SpatialVisWindow();
 	
     void setSelectionBoxRedefine(bool enabled) { can_redefine_selection_box = enabled; }
@@ -88,7 +88,8 @@ private slots:
 	void ovlFFChecked(bool);
 	void ovlAlphaChanged(int);
 	void ovlFpsChanged(int);
-	
+    void gotoExtraAIClicked();
+
 private:	
 	int pos2ChanId(double x, double y) const;
     Vec2 chanId2Pos(const int chanId) const;
@@ -108,7 +109,8 @@ private:
     volatile bool threadsafe_is_visible;
 
     DAQ::Params & params;
-	const int nvai, nextra;
+    int nvai, nextra;
+    const bool suppressExtra; ///< iff true, extra chans not visible in spatial vis but selectable via a button in toolbar
     int nbx, nby;
     Vec2i selectionDims; // the size of the selection box, in terms of number of channels    
     bool didSelDimsDefine, can_redefine_selection_box, click_to_select;

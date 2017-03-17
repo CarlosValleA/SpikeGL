@@ -1155,7 +1155,6 @@ void ConfigureDialogController::paramsFromSettingsObject(DAQ::Params & p, const 
     p.overrideGraphsPerTab = settings.value("overrideGraphsPerTab", 0).toUInt();
     p.graphUpdateRate = settings.value("graphUpdateRate", DEF_TASK_READ_FREQ_HZ).toInt();
     p.spatialVisUpdateRate = settings.value("spatialVisUpdateRate", DEF_TASK_READ_FREQ_HZ).toInt();
-
 	
 	p.bug.rate = settings.value("bug_rate", 2).toUInt();
 	p.bug.ttlTrig = settings.value("bug_ttlTrig", -1).toInt();
@@ -1188,6 +1187,7 @@ void ConfigureDialogController::paramsFromSettingsObject(DAQ::Params & p, const 
     p.fg.disableChanMap = settings.value("fg_no_chan_map", false).toBool();
     p.fg.chanMapText = settings.value("fg_chanmap_txt", "").toString();
     p.fg.extraAI = settings.value("fg_extra_ai", false).toBool();
+    p.fg.spatialVisSuppressExtraChans = settings.value("fg_spatialVisSuppressExtraChans", true).toBool();
 }
 
 void ConfigureDialogController::loadSettings()
@@ -1306,6 +1306,7 @@ void ConfigureDialogController::saveSettings(int sc) const
         settings.setValue("fg_no_chan_map", p.fg.disableChanMap);
         settings.setValue("fg_chanmap_txt", p.fg.chanMapText);
         settings.setValue("fg_extra_ai", p.fg.extraAI);
+        settings.setValue("fg_spatialVisSuppressExtraChans", p.fg.spatialVisSuppressExtraChans);
     }
 
 	settings.endGroup(); 

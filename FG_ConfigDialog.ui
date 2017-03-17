@@ -6,9 +6,27 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
-    <height>325</height>
+    <width>461</width>
+    <height>518</height>
    </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>461</width>
+    <height>518</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>461</width>
+    <height>518</height>
+   </size>
   </property>
   <property name="windowTitle">
    <string>Configure Framegrabber Acquisition</string>
@@ -16,9 +34,9 @@
   <widget class="QDialogButtonBox" name="buttonBox">
    <property name="geometry">
     <rect>
-     <x>50</x>
-     <y>285</y>
-     <width>341</width>
+     <x>20</x>
+     <y>478</y>
+     <width>421</width>
      <height>32</height>
     </rect>
    </property>
@@ -452,7 +470,7 @@ p, li { white-space: pre-wrap; }
    <property name="geometry">
     <rect>
      <x>180</x>
-     <y>250</y>
+     <y>230</y>
      <width>201</width>
      <height>25</height>
     </rect>
@@ -467,6 +485,163 @@ p, li { white-space: pre-wrap; }
     <string>Acquire 2 Extra AI Channels (0-5V)</string>
    </property>
   </widget>
+  <widget class="QCheckBox" name="aiNoSpatialVisChk">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="geometry">
+    <rect>
+     <x>200</x>
+     <y>250</y>
+     <width>251</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="toolTip">
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If checked, the 2 extra AI channels won't show up in the 'Spatial Visualization' window, but can instead be navigated-to by clicking a button in the window's toolbar.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+   </property>
+   <property name="whatsThis">
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If checked, the 2 extra AI channels won't show up in the 'Spatial Visualization' window, but can instead be navigated-to by clicking a button in the window's toolbar.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;s</string>
+   </property>
+   <property name="text">
+    <string>Suppress Extra AI in Spatial Vis Window</string>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+  </widget>
+  <widget class="QGroupBox" name="acqStartEndGB">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>283</y>
+     <width>461</width>
+     <height>193</height>
+    </rect>
+   </property>
+   <property name="toolTip">
+    <string>Specify timed or triggered acquisitions here</string>
+   </property>
+   <property name="title">
+    <string>Acquisition Start/End</string>
+   </property>
+   <widget class="QComboBox" name="acqStartEndCB">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>23</y>
+      <width>321</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <property name="toolTip">
+     <string>Choose the acquisition trigger type, or Immediate for immediate mode</string>
+    </property>
+    <property name="currentIndex">
+     <number>0</number>
+    </property>
+    <item>
+     <property name="text">
+      <string>Immediate Start</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>Photodiode Controlled Start &amp; End</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>Photodiode Controlled Start Only</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>Timed</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>StimulateOpenGLII Plugin Start &amp; End</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>StimulateOpenGLII Plugin Start Only</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>AI Controlled Start &amp; ReTriggering</string>
+     </property>
+    </item>
+   </widget>
+   <widget class="QFrame" name="acqFrame">
+    <property name="geometry">
+     <rect>
+      <x>9</x>
+      <y>86</y>
+      <width>444</width>
+      <height>92</height>
+     </rect>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::StyledPanel</enum>
+    </property>
+    <property name="frameShadow">
+     <enum>QFrame::Raised</enum>
+    </property>
+    <widget class="QLabel" name="acqStartEndDescrLbl">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>9</y>
+       <width>440</width>
+       <height>82</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Sans Serif'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:10pt; font-style:italic; color:#294928;&quot;&gt;The acquisition will start immediately.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QCheckBox" name="stimGLReopenCB">
+    <property name="geometry">
+     <rect>
+      <x>24</x>
+      <y>52</y>
+      <width>397</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <property name="toolTip">
+     <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Sans Serif'; font-size:9pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p align=&quot;justify&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;If checked, then whenever a Stimulate OpenGL Plugin (re)starts, the current save file is closed and a new one is opened.  The format for this save file name is:&lt;/p&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;PREFIX_STIMGLPLUGINNAME_N&lt;/p&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;/p&gt;
+&lt;p align=&quot;justify&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Where PREFIX is the filename specified in the above lineedit, STIMPLUGINNAME is the name of the plugin, and N is an integer number to make the filename unique.&lt;/p&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;/p&gt;
+&lt;p align=&quot;justify&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Note: Checking this requires a copy of StimGL II to be running otherwise data will not be saved.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+    </property>
+    <property name="text">
+     <string>Re-Open New Save File on StimGL Experiment (Re)Start</string>
+    </property>
+   </widget>
+  </widget>
  </widget>
  <resources/>
  <connections>
@@ -478,7 +653,7 @@ p, li { white-space: pre-wrap; }
    <hints>
     <hint type="sourcelabel">
      <x>248</x>
-     <y>254</y>
+     <y>478</y>
     </hint>
     <hint type="destinationlabel">
      <x>157</x>
@@ -494,11 +669,27 @@ p, li { white-space: pre-wrap; }
    <hints>
     <hint type="sourcelabel">
      <x>316</x>
-     <y>260</y>
+     <y>478</y>
     </hint>
     <hint type="destinationlabel">
      <x>286</x>
      <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>aiExtraChk</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>aiNoSpatialVisChk</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>317</x>
+     <y>235</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>330</x>
+     <y>260</y>
     </hint>
    </hints>
   </connection>
