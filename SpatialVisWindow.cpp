@@ -288,12 +288,12 @@ void SpatialVisWindow::putScans(const int16 *scans, unsigned scans_size_samps, u
 
     const int downSampleSkips = downsampleRatio > 1.0 ? qRound(downsampleRatio)-1 : 0;//params.srate >= 1000.0 ? qRound(params.srate/1000.0)-1 : 0;
 
-    ChanMinMaxs cmm; cmm.resize(nvai);
+    ChanMinMaxs cmm; cmm.resize(params.nVAIChans);
     const bool doAutoScale = autoScaleColorRange;
 
     if (doAutoScale) {
         // bookkeeping -- keep track of min/max values seen, per channel for a window of time to determine scale..
-        double  now = double(u64(firstSamp/nvai))/params.srate,
+        double  now = double(u64(firstSamp/params.nVAIChans))/params.srate,
                 maxAge = 0;
         for (int i = 0; i < graphTimes.size(); ++i) {
             if (graphTimes[i] > maxAge) maxAge = graphTimes[i];
@@ -306,8 +306,8 @@ void SpatialVisWindow::putScans(const int16 *scans, unsigned scans_size_samps, u
         for (int i = 0, ch = 0; i < (int)scans_size_samps; /*nothing. i is incremented last line of loop below..*/) {
             if (scans[i] <= cmm[ch].smin) cmm[ch].smin = scans[i];
             if (scans[i] >= cmm[ch].smax) cmm[ch].smax = scans[i];
-            if ((ch=(++i % nvai))==0)
-                i += nvai*downSampleSkips;  // every Nth scan..
+            if ((ch=(++i % params.nVAIChans))==0)
+                i += params.nVAIChans*downSampleSkips;  // every Nth scan..
         }
         chunkChanMinMaxs[now] = cmm;
 
@@ -324,11 +324,12 @@ void SpatialVisWindow::putScans(const int16 *scans, unsigned scans_size_samps, u
        // Debug() << " auto-scaling code took: " << (getTime()-t0)*1e3 << " ms, chunksize:"  << (scans_size_samps/nvai) << " scans" <<  " maxage=" << maxAge << " n_chunks_remembered:" << chunkChanMinMaxs.size() << " now=" << now;
     }
 
-    int firstidx = scans_size_samps - nvai;
+    //int firstidx = scans_size_samps - nvai;
+    int firstidx = scans_size_samps - params.nVAIChans; ///< nvai is sometimes smaller than params.nVAIchans!
     if (firstidx < 0) firstidx = 0;
     const bool nocm = params.fg.enabled && params.fg.disableChanMap;
-    for (int i = firstidx; i < int(scans_size_samps); ++i) {
-        int ch = i%nvai;
+    for (int i = firstidx; i < int(firstidx+nvai); ++i) {
+        int ch = (i%params.nVAIChans) % nvai; // this ugliness is because nvai doesn't always equal params.nVAIChans
         int chanId = nocm ? ch : revsorting[ch];
         const QColor color (chanId < nvai-nextra ? fg : fg2);
 #ifdef HEADACHE_PROTECTION
