@@ -75,7 +75,7 @@ SpatialVisWindow::SpatialVisWindow(DAQ::Params & params, const Vec2i & xy_dims, 
 	toolBar = addToolBar("Spatial Visualization Controls");
 	
     if (suppressExtra) {
-        QPushButton *b = new QPushButton("Go To AI Chans", toolBar);
+        QPushButton *b = new QPushButton("View AI Chans", toolBar);
         QFont f (b->font());
         f.setPointSize(f.pointSize()-1);
         b->setFont(f);
