@@ -16,6 +16,7 @@
 #include <QTextStream>
 #include <QSet>
 #include <QStringList>
+#include "Icon-Config.xpm"
 
 FG_ConfigDialog::FG_ConfigDialog(DAQ::Params & params, QObject *parent)
 : QObject(parent), acceptedParams(params)
@@ -25,8 +26,23 @@ FG_ConfigDialog::FG_ConfigDialog(DAQ::Params & params, QObject *parent)
 	dialogW->setAttribute(Qt::WA_DeleteOnClose, false);
 	dialog = new Ui::FG_ConfigDialog;
     dialog->setupUi(dialogW);
-	Connect(dialog->browseBut, SIGNAL(clicked()), this, SLOT(browseButClicked()));
+    dialogW->setWindowIcon(QIcon(QPixmap(Icon_Config_xpm)));
+    Connect(dialog->browseBut, SIGNAL(clicked()), this, SLOT(browseButClicked()));
     Connect(dialog->chanMapBut, SIGNAL(clicked()), this, SLOT(chanMapButClicked()));
+
+    // triggering task stop/start params -- this is basically copy/pasted from ConfigureDialogController.cpp -- todo: refactor both!
+    acqPdParams = new Ui::AcqPDParams;
+    acqTimedParams = new Ui::AcqTimedParams;
+    acqPdParamsW = new QWidget(dialog->acqFrame);
+    acqTimedParamsW = new QWidget(dialog->acqFrame);
+    acqPdParams->setupUi(acqPdParamsW);
+    acqTimedParams->setupUi(acqTimedParamsW);
+    Connect(dialog->acqStartEndCB, SIGNAL(activated(int)), this, SLOT(acqStartEndCBChanged()));
+    acqPdParams->pdPassthruAOChk->setHidden(true); // not used in this mode
+    acqPdParams->pdPassthruAOSB->setHidden(true); // not used in this mode
+    acqPdParams->virtualChk->setHidden(true);
+    acqPdParams->pdAIThreshSB->setMinimum(0.0);
+    acqPdParams->pdAIThreshSB->setMaximum(5.0);
 }
 
 FG_ConfigDialog::~FG_ConfigDialog()
@@ -153,11 +169,32 @@ int FG_ConfigDialog::exec()
 				}
 				
 				//p.overrideGraphsPerTab = dialog->graphsPerTabCB->currentText().toUInt();
-				
+
 				p.isIndefinite = true;
 				p.isImmediate = true;
-				p.acqStartEndMode = DAQ::Immediate;
-				p.usePD = 0;
+                p.acqStartEndMode = (DAQ::AcqStartEndMode)dialog->acqStartEndCB->currentIndex();
+                p.usePD = 0; p.pdChan = 0; p.pdChanIsVirtual = true; p.idxOfPdChan = 0;
+                if (p.acqStartEndMode == DAQ::PDStartEnd || p.acqStartEndMode == DAQ::PDStart || p.acqStartEndMode == DAQ::AITriggered) {
+                    p.usePD = true;
+                    p.pdChanIsVirtual = true;
+                    p.pdChan = acqPdParams->pdAISB->value() + DAQ::FGTask::NumChans;
+                    p.idxOfPdChan = p.pdChan;
+                    double val = acqPdParams->pdAIThreshSB->value();
+                    if (val < 0.0) val = 0.0; if (val > 5.0) val = 5.0;
+                    p.pdThresh = static_cast<int16>(((val/5.0) * 65535.0) - 32768.0);
+                    p.pdStopTime = acqPdParams->pdStopTimeSB->value();
+                    p.silenceBeforePD = double(acqPdParams->pdPre->value()) / 1000.0;
+                    p.pdThreshW = acqPdParams->pdWSB->value();
+                }
+                p.stimGlTrigResave = dialog->stimGLReopenCB->isChecked();
+                if (p.acqStartEndMode == DAQ::Timed) {
+                    p.startIn = acqTimedParams->startHrsSB->value()*60.*60. + acqTimedParams->startMinsSB->value()*60 + acqTimedParams->startSecsSB->value();
+                    p.duration = acqTimedParams->durHrsSB->value()*60.*60. + acqTimedParams->durMinsSB->value()*60 + acqTimedParams->durSecsSB->value();
+                    p.isIndefinite = acqTimedParams->indefCB->isChecked();
+                    p.isImmediate = acqTimedParams->nowCB->isChecked();
+                }
+
+
 
                 /*p.chanMap SET HERE: */
                 p.fg.spatialCols = spatialCols; p.fg.spatialRows = spatialRows;
@@ -189,7 +226,7 @@ int FG_ConfigDialog::exec()
 				p.mode = DAQ::AIRegular;
 				p.aoPassthru = 0;
 				p.dualDevMode = false;
-                p.stimGlTrigResave = true; // HACK XXX don't open file for now by default since it's huge
+          //      p.stimGlTrigResave = true; // HACK XXX don't open file for now by default since it's huge
                 p.srate = DAQ::FGTask::SamplingRate;
 				p.aiTerm = DAQ::Default;
 				p.aiString = QString("0:%1").arg(p.nVAIChans-1);
@@ -239,6 +276,38 @@ FG_ConfigDialog::validateForm(QString & errTitle, QString & errMsg, bool isGUI)
         errMsg = err;
         return AGAIN;
     }
+    int m = dialog->acqStartEndCB->currentIndex();
+    int ai = acqPdParams->pdAISB->value();
+    switch (m) {
+    case DAQ::AITriggered:
+        if (dialog->stimGLReopenCB->isChecked()) {
+            errTitle = "Incompatible Configuration", errMsg = QString().sprintf("'Re-Open New Save File on StimGL Experiment' not compatible with 'TTL Controlled Start & Re-Triggered'");
+            return AGAIN;
+        }
+    case DAQ::PDStart:
+    case DAQ::PDStartEnd:
+        if (!dialog->aiExtraChk->isChecked()) {
+            errTitle = "AI Extra Chan Required"; errMsg = "AI Extra Channels are required for AI-based triggering mode!";
+            return AGAIN;
+        }
+        if (ai < 0 || ai > 1) {
+            errTitle = "AI Channel Invalid";
+            errMsg = "The AI channel specified for triggering is out of range. Either specify '0' or '1' as the AI channel to use for triggering!";
+            return AGAIN;
+        }
+        break;
+    case DAQ::StimGLStartEnd:
+        if (dialog->stimGLReopenCB->isChecked()) {
+            errTitle = "Incompatible Configuration", errMsg = QString().sprintf("'Re-Open New Save File on StimGL Experiment' not compatible with 'StimGL Plugin Start & End'");
+            return AGAIN;
+        }
+        break;
+    default:
+        // NOOP
+        (void)0;
+        break;
+    }
+
     chanMapTxt = mapstr;
 	return OK;
 }
@@ -298,6 +367,31 @@ void FG_ConfigDialog::guiFromSettings()
 
     if (!p.fg.chanMapText.trimmed().length()) p.fg.chanMapText = generateDefaultMappingString(0, 64, 36);
 
+
+    dialog->acqStartEndCB->setCurrentIndex((int)p.acqStartEndMode);
+    double val = (p.pdThresh/32768.+1.)/2. * (5.0-0.0) + 0.0;
+    acqPdParams->pdAIThreshSB->setValue(val);
+    acqPdParams->pdStopTimeSB->setValue(p.pdStopTime);
+    acqPdParams->pdPre->setValue(p.silenceBeforePD*1000.);
+    acqPdParams->pdWSB->setValue(p.pdThreshW);
+    acqPdParams->virtualChk->setChecked(p.pdChanIsVirtual);
+    acqPdParams->pdAISB->setMinimum(0);
+    acqPdParams->pdAISB->setMaximum(1);
+    acqPdParams->pdAISB->setValue(p.pdChan - DAQ::FGTask::NumChans);
+    // now the timed params stuff
+    acqTimedParams->startHrsSB->setValue(int(p.startIn/(60.*60.)));
+    acqTimedParams->startMinsSB->setValue(int((int(p.startIn)%(60*60))/60.));
+    acqTimedParams->startSecsSB->setValue(int((int(p.startIn)%(60*60)))%60);
+    acqTimedParams->durHrsSB->setValue(int(p.duration/(60.*60.)));
+    acqTimedParams->durMinsSB->setValue(int((int(p.duration)%(60*60))/60.));
+    acqTimedParams->durSecsSB->setValue((int(p.duration)%(60*60))%60);
+    acqTimedParams->indefCB->setChecked(p.isIndefinite);
+    acqTimedParams->nowCB->setChecked(p.isImmediate);
+
+    dialog->stimGLReopenCB->setChecked(p.stimGlTrigResave);
+
+    // fire off slots to polish
+    acqStartEndCBChanged();
 }
 
 void FG_ConfigDialog::saveSettings()
@@ -374,4 +468,67 @@ void FG_ConfigDialog::chanMapButClicked()
             }
         } else keepTrying = false;
     }
+}
+
+void FG_ConfigDialog::acqStartEndCBChanged()
+{
+    bool entmp = false, aitriggered = false;
+    acqPdParamsW->hide();
+    acqTimedParamsW->hide();
+    DAQ::AcqStartEndMode mode = (DAQ::AcqStartEndMode)dialog->acqStartEndCB->currentIndex();
+    dialog->acqStartEndDescrLbl->hide();
+    acqPdParams->pdAILabel->setToolTip(acqPdParams->pdAILabel->toolTip().replace("(physical or virtual)","'Extra'"));
+    acqPdParams->pdAISB->setToolTip(acqPdParams->pdAILabel->toolTip());
+    dialog->aiExtraChk->setEnabled(true);
+
+    switch (mode) {
+    case DAQ::Immediate:
+        dialog->acqStartEndDescrLbl->setText("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\"><html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">p, li { white-space: pre-wrap; }</style></head><body style=\" font-family:'Sans Serif'; font-size:9pt; font-weight:400; font-style:normal;\"><p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-style:italic; \">The acquisition will start immediately.</span></p></body></html>");
+        dialog->acqStartEndDescrLbl->show();
+        break;
+    case DAQ::AITriggered:
+        aitriggered = true;
+        // fall thru...
+    case DAQ::PDStartEnd:
+        entmp = true;
+        // fall thru...
+    case DAQ::PDStart:
+        acqPdParams->pdStopTimeLbl->setEnabled(entmp);
+        acqPdParams->pdAILabel->setText("AI Ch:");
+        acqPdParams->pdAISB->setToolTip(acqPdParams->pdAILabel->toolTip());
+        if (aitriggered) {
+            acqPdParams->pdStopTimeLbl->setText("AI stop time (sec):");
+        } else {
+            acqPdParams->pdStopTimeLbl->setText("PD stop time (sec):");
+        }
+        acqPdParams->pdStopTimeSB->setEnabled(entmp);
+        acqPdParamsW->setParent(dialog->acqFrame);
+        acqPdParamsW->show();
+        dialog->aiExtraChk->setChecked(true);
+        dialog->aiExtraChk->setEnabled(false);
+        break;
+    case DAQ::Timed:
+        acqTimedParamsW->setParent(dialog->acqFrame);
+        acqTimedParamsW->show();
+        dialog->aiExtraChk->setEnabled(true);
+        break;
+    case DAQ::StimGLStartEnd:
+        dialog->acqStartEndDescrLbl->setText("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\"><html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">p, li { white-space: pre-wrap; }</style></head><body style=\" font-family:'Sans Serif'; font-size:9pt; font-weight:400; font-style:normal;\"><p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-style:italic; color:#294928;\">The acquisition will be triggered to start and end by the external StimGL II program.</span></p></body></html>");
+        dialog->acqStartEndDescrLbl->show();
+        dialog->aiExtraChk->setEnabled(true);
+        break;
+    case DAQ::StimGLStart:
+        dialog->acqStartEndDescrLbl->setText("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\"><html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">p, li { white-space: pre-wrap; }</style></head><body style=\" font-family:'Sans Serif'; font-size:9pt; font-weight:400; font-style:normal;\"><p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-style:italic; color:#294928;\">The acquisition will be triggered to start by the external StimGL II program.</span></p></body></html>");
+        dialog->acqStartEndDescrLbl->show();
+        dialog->aiExtraChk->setEnabled(true);
+        break;
+    default:
+        Error() << "INTERNAL ERROR: INVALID ACQSTARTENDMODE!  FIXME!";
+        break;
+    }
+
+    dialog->stimGLReopenCB->setEnabled(!aitriggered);
+    if (aitriggered) dialog->stimGLReopenCB->setChecked(false);
+
+    //aiRangeChanged();
 }

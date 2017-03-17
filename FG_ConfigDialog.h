@@ -14,6 +14,8 @@
 #include <QVector>
 #include "DAQ.h"
 #include "ui_FG_ConfigDialog.h"
+#include "ui_AcqPDParams.h"
+#include "ui_AcqTimedParams.h"
 
 class QSettings;
 class QDialog;
@@ -32,6 +34,9 @@ public:
     int exec();
 	
     Ui::FG_ConfigDialog *dialog; 
+    Ui::AcqPDParams *acqPdParams;
+    Ui::AcqTimedParams *acqTimedParams;
+
 			
     bool isDialogVisible() const { return dialogW->isVisible(); }
 
@@ -42,6 +47,7 @@ private slots:
 	void browseButClicked();
     void actuallyDoHardwareProbe();
     void chanMapButClicked();
+    void acqStartEndCBChanged();
 
 private:
 	
@@ -60,6 +66,7 @@ private:
     void createAndShowPleaseWaitDialog();
 
     QDialog *dialogW;
+    QWidget *acqPdParamsW, *acqTimedParamsW;
     QMessageBox *mb;
     QVector<int> chanMapFromUser;
     QString chanMapTxt; int spatialRows, spatialCols;

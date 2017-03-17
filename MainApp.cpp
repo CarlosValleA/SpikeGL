@@ -966,18 +966,16 @@ bool MainApp::startAcq(QString & errTitle, QString & errMsg)
 
     switch (params.acqStartEndMode) {
         case DAQ::Immediate: taskWaitingForTrigger = false; break;
-        case DAQ::PDStartEnd: 
-        case DAQ::PDStart:
         case DAQ::Timed:
             if (params.isImmediate) {
                 taskWaitingForTrigger = false;
                 startScanCt = 0;
-                break;
             } else {
                 startScanCt = i64(params.startIn * params.srate);
             }
-            stopScanCt = params.isIndefinite ? 0x7fffffffffffffffLL : i64(startScanCt + params.duration*params.srate);
-            
+            stopScanCt = params.isIndefinite ? 0x7fffffffffffffffLL : i64(startScanCt + params.duration*params.srate);            
+        case DAQ::PDStartEnd:
+        case DAQ::PDStart:
         case DAQ::StimGLStartEnd:
         case DAQ::StimGLStart:
 		case DAQ::AITriggered:
