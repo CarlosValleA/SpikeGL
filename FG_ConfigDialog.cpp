@@ -282,14 +282,12 @@ FG_ConfigDialog::validateForm(QString & errTitle, QString & errMsg, bool isGUI)
     }
     int m = dialog->acqStartEndCB->currentIndex();
     int ai = acqPdParams->pdAISB->value();
+    bool sglRetrigDisallowed = false;
     switch (m) {
-    case DAQ::AITriggered:
-        if (dialog->stimGLReopenCB->isChecked()) {
-            errTitle = "Incompatible Configuration", errMsg = QString().sprintf("'Re-Open New Save File on StimGL Experiment' not compatible with 'TTL Controlled Start & Re-Triggered'");
-            return AGAIN;
-        }
-    case DAQ::PDStart:
     case DAQ::PDStartEnd:
+    case DAQ::AITriggered:
+        sglRetrigDisallowed = true;
+    case DAQ::PDStart:
         if (!dialog->aiExtraChk->isChecked()) {
             errTitle = "AI Extra Chan Required"; errMsg = "AI Extra Channels are required for AI-based triggering mode!";
             return AGAIN;
@@ -301,15 +299,16 @@ FG_ConfigDialog::validateForm(QString & errTitle, QString & errMsg, bool isGUI)
         }
         break;
     case DAQ::StimGLStartEnd:
-        if (dialog->stimGLReopenCB->isChecked()) {
-            errTitle = "Incompatible Configuration", errMsg = QString().sprintf("'Re-Open New Save File on StimGL Experiment' not compatible with 'StimGL Plugin Start & End'");
-            return AGAIN;
-        }
+        sglRetrigDisallowed = true;
         break;
     default:
         // NOOP
         (void)0;
         break;
+    }
+    if (sglRetrigDisallowed && dialog->stimGLReopenCB->isChecked()) {
+        errTitle = "Incompatible Configuration", errMsg = QString().sprintf("'Re-Open New Save File on StimGL Experiment' not compatible with selected triggering mode.");
+        return AGAIN;
     }
 
     chanMapTxt = mapstr;
@@ -476,7 +475,7 @@ void FG_ConfigDialog::chanMapButClicked()
 
 void FG_ConfigDialog::acqStartEndCBChanged()
 {
-    bool entmp = false, aitriggered = false;
+    bool entmp = false, aitriggered = false, noSGLRestartCB = false;
     acqPdParamsW->hide();
     acqTimedParamsW->hide();
     DAQ::AcqStartEndMode mode = (DAQ::AcqStartEndMode)dialog->acqStartEndCB->currentIndex();
@@ -484,6 +483,7 @@ void FG_ConfigDialog::acqStartEndCBChanged()
     acqPdParams->pdAILabel->setToolTip(acqPdParams->pdAILabel->toolTip().replace("(physical or virtual)","'Extra'"));
     acqPdParams->pdAISB->setToolTip(acqPdParams->pdAILabel->toolTip());
     dialog->aiExtraChk->setEnabled(true);
+    dialog->stimGLReopenCB->setEnabled(true);
 
     switch (mode) {
     case DAQ::Immediate:
@@ -494,6 +494,7 @@ void FG_ConfigDialog::acqStartEndCBChanged()
         aitriggered = true;
         // fall thru...
     case DAQ::PDStartEnd:
+        noSGLRestartCB = true;
         entmp = true;
         // fall thru...
     case DAQ::PDStart:
@@ -520,6 +521,7 @@ void FG_ConfigDialog::acqStartEndCBChanged()
         dialog->acqStartEndDescrLbl->setText("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\"><html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">p, li { white-space: pre-wrap; }</style></head><body style=\" font-family:'Sans Serif'; font-size:9pt; font-weight:400; font-style:normal;\"><p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-style:italic; color:#294928;\">The acquisition will be triggered to start and end by the external StimGL II program.</span></p></body></html>");
         dialog->acqStartEndDescrLbl->show();
         dialog->aiExtraChk->setEnabled(true);
+        noSGLRestartCB = true;
         break;
     case DAQ::StimGLStart:
         dialog->acqStartEndDescrLbl->setText("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\"><html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">p, li { white-space: pre-wrap; }</style></head><body style=\" font-family:'Sans Serif'; font-size:9pt; font-weight:400; font-style:normal;\"><p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-size:10pt; font-style:italic; color:#294928;\">The acquisition will be triggered to start by the external StimGL II program.</span></p></body></html>");
@@ -531,8 +533,8 @@ void FG_ConfigDialog::acqStartEndCBChanged()
         break;
     }
 
-    dialog->stimGLReopenCB->setEnabled(!aitriggered);
-    if (aitriggered) dialog->stimGLReopenCB->setChecked(false);
-
-    //aiRangeChanged();
+    if (noSGLRestartCB) {
+        dialog->stimGLReopenCB->setChecked(false);
+        dialog->stimGLReopenCB->setEnabled(false);
+    }
 }
