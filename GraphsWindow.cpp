@@ -235,7 +235,7 @@ void GraphsWindow::sharedCtor(DAQ::Params & p, bool isSaving, int graphUpdateRat
 
 	// Create downsample and filter controls and apply saved saved DownSampleChk and HPF Chk
 	// NB: to correctly apply the saved filter and downsample state, we call downsampleChk() and hpfChk() at the end of this contstructor!
-    QSettings settings("janelia.hhmi.org", APPNAME);
+    QSettings settings(SETTINGS_DOMAIN, SETTINGS_APP);
 	settings.beginGroup("GraphsWindow");
 	const bool setting_ds = settings.value("downsample",false).toBool(),
                setting_filt = settings.value("filter",true).toBool();
@@ -760,7 +760,7 @@ void GraphsWindow::setDownsampling(bool checked)
         }
         for (int i = 0; i < graphs.size(); ++i)
             setGraphTimeSecs(i, graphTimesSecs[i]); // clear the points and reserve the right capacities.
-        QSettings settings("janelia.hhmi.org", APPNAME);
+        QSettings settings(SETTINGS_DOMAIN, SETTINGS_APP);
         settings.beginGroup("GraphsWindow");
         settings.setValue("downsample",checked);
         settings.setValue("downsample_hz", hz);
@@ -1114,7 +1114,7 @@ void GraphsWindow::hpfChk(bool b)
     if (b) {
         filter = new HPFilter(graphs.size(), 300.0);
     }
-    QSettings settings("janelia.hhmi.org", APPNAME);
+    QSettings settings(SETTINGS_DOMAIN, SETTINGS_APP);
 	settings.beginGroup("GraphsWindow");
 	settings.setValue("filter",b);
 }
